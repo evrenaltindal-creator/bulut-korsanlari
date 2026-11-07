@@ -23,6 +23,7 @@ class BombingConfig {
     this.wind = 22,
     this.seed = 1,
     this.airshipHp = 8,
+    this.flagship = false,
   });
 
   final List<BombTargetSpec> targets;
@@ -35,6 +36,9 @@ class BombingConfig {
   final double wind;
   final int seed;
   final int airshipHp;
+
+  /// Draw the big target as the pirates' flying galleon, not a zeppelin.
+  final bool flagship;
 }
 
 class BombTarget {

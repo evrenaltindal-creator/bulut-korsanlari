@@ -185,6 +185,7 @@ const List<MissionDef> campaignMissions = [
       wind: 30,
       length: 2600,
       airshipHp: 10,
+      flagship: true,
       targets: [
         BombTargetSpec(BombTargetKind.airship, primary: true),
         BombTargetSpec(BombTargetKind.hangar, primary: true, count: 2),

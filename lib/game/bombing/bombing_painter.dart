@@ -257,6 +257,10 @@ class BombingPainter {
     double ey,
     Color Function(Color) f,
   ) {
+    if (sim.config.flagship) {
+      _paintGalleon(canvas, t, c, ex, ey, f);
+      return;
+    }
     // Shadow on the clouds far below.
     canvas.drawOval(
       Rect.fromCenter(
@@ -324,6 +328,159 @@ class BombingPainter {
         prop,
       );
     }
+    canvas.restore();
+    // Damage bar so the player can see the hull giving way.
+    paintMeter(
+      canvas,
+      Rect.fromCenter(center: c + Offset(0, -len - 14), width: 70, height: 5),
+      t.hp / t.maxHp,
+      color: Palette.danger,
+    );
+  }
+
+  /// The Storm Mother seen from above: a flying galleon with a planked
+  /// deck, castles fore and aft, three masts of red sails, cannon along
+  /// both sides and a black pennant. Bow points the way it flies (up).
+  void _paintGalleon(
+    Canvas canvas,
+    BombTarget t,
+    Offset c,
+    double ex,
+    double ey,
+    Color Function(Color) f,
+  ) {
+    final len = ey * _s * 1.15;
+    final wid = ex * _s * 1.05;
+    // Shadow on the clouds far below.
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: c + Offset(40 * _s, 60 * _s),
+        width: wid * 2.6,
+        height: len * 2,
+      ),
+      Paint()..color = const Color(0x33203048),
+    );
+    canvas.save();
+    canvas.translate(c.dx, c.dy);
+    Path hullPath(double k) => Path()
+      ..moveTo(0, -len * k)
+      ..quadraticBezierTo(
+        wid * 1.05 * k,
+        -len * 0.45 * k,
+        wid * k,
+        len * 0.15 * k,
+      )
+      ..lineTo(wid * 0.85 * k, len * 0.9 * k)
+      ..lineTo(-wid * 0.85 * k, len * 0.9 * k)
+      ..lineTo(-wid * k, len * 0.15 * k)
+      ..quadraticBezierTo(-wid * 1.05 * k, -len * 0.45 * k, 0, -len * k)
+      ..close();
+    canvas.drawPath(hullPath(1), Paint()..color = f(const Color(0xFF5A3A22)));
+    final deck = hullPath(0.86);
+    canvas.drawPath(deck, Paint()..color = f(const Color(0xFF9A6B3F)));
+    canvas.save();
+    canvas.clipPath(deck);
+    final plank = Paint()
+      ..color = const Color(0x33402810)
+      ..strokeWidth = 1;
+    for (var x = -wid; x < wid; x += 4 * _s) {
+      canvas.drawLine(Offset(x, -len), Offset(x, len), plank);
+    }
+    canvas.restore();
+    // Castles: raised poop deck aft, forecastle at the bow.
+    canvas.drawRect(
+      Rect.fromLTRB(-wid * 0.78, len * 0.55, wid * 0.78, len * 0.88),
+      Paint()..color = f(const Color(0xFF6E4527)),
+    );
+    canvas.drawRect(
+      Rect.fromLTRB(-wid * 0.78, len * 0.55, wid * 0.78, len * 0.88),
+      Paint()
+        ..color = const Color(0x66000000)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, -len * 0.82)
+        ..lineTo(wid * 0.5, -len * 0.55)
+        ..lineTo(-wid * 0.5, -len * 0.55)
+        ..close(),
+      Paint()..color = f(const Color(0xFF6E4527)),
+    );
+    // Cannon poking out along both sides.
+    final gun = Paint()..color = const Color(0xFF26231F);
+    for (var k = 0; k < 5; k++) {
+      final y = -len * 0.35 + k * len * 0.2;
+      for (final side in [-1.0, 1.0]) {
+        canvas.drawRect(
+          Rect.fromCenter(
+            center: Offset(side * wid * 1.02, y),
+            width: 7 * _s,
+            height: 3 * _s,
+          ),
+          gun,
+        );
+      }
+    }
+    // Three masts of red sails, seen from above as bellied yards.
+    final rope = Paint()
+      ..color = const Color(0x99302010)
+      ..strokeWidth = 1;
+    for (final (y, span) in [
+      (-len * 0.5, 2.5),
+      (-len * 0.05, 3.1),
+      (len * 0.36, 2.7),
+    ]) {
+      final half = wid * span / 2 + wid * 0.2;
+      canvas.drawLine(
+        Offset(-half, y),
+        Offset(-wid * 0.9, y + len * 0.12),
+        rope,
+      );
+      canvas.drawLine(Offset(half, y), Offset(wid * 0.9, y + len * 0.12), rope);
+      final sail = Path()
+        ..moveTo(-half, y)
+        ..quadraticBezierTo(0, y - len * 0.2, half, y)
+        ..lineTo(half * 0.9, y + len * 0.12)
+        ..quadraticBezierTo(0, y - len * 0.02, -half * 0.9, y + len * 0.12)
+        ..close();
+      canvas.drawPath(
+        sail.shift(Offset(6 * _s, 8 * _s)),
+        Paint()..color = const Color(0x33000000),
+      );
+      canvas.drawPath(sail, Paint()..color = f(Palette.pirateSail));
+      canvas.drawPath(
+        sail,
+        Paint()
+          ..color = const Color(0x66601410)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2,
+      );
+      // Patches on the canvas.
+      canvas.drawRect(
+        Rect.fromCenter(
+          center: Offset(half * 0.35, y - len * 0.03),
+          width: 9 * _s,
+          height: 6 * _s,
+        ),
+        Paint()..color = const Color(0x55E8C9A0),
+      );
+      canvas.drawCircle(
+        Offset(0, y - len * 0.04),
+        4 * _s,
+        Paint()..color = f(Palette.woodDark),
+      );
+    }
+    // Black pennant on the mainmast, fluttering.
+    final wave = math.sin(sim.time * 7) * 3 * _s;
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, -len * 0.06)
+        ..lineTo(-14 * _s, -len * 0.02 + wave)
+        ..lineTo(0, len * 0.01)
+        ..close(),
+      Paint()..color = const Color(0xFF1C1A1E),
+    );
     canvas.restore();
     // Damage bar so the player can see the hull giving way.
     paintMeter(
