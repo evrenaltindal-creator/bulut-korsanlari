@@ -1,0 +1,30 @@
+Bulut Korsanları - hikâye resimlerinin künyesi
+=============================================
+
+Araç:      Google Flow, Nano Banana Pro (Google'ın görsel üretim modeli)
+Tarih:     7 Kasım 2026
+Promptlar: docs/art/image_prompts.md (bu oyun için yazıldı)
+Hak:       Google Hizmet Şartları (30 Temmuz 2026): "Some of our services
+           allow you to generate original content. Google won't claim
+           ownership over that content." Yapay zekâ içeriğini insan
+           yapımıymış gibi göstermek yasak; oyunun Hakkında penceresi
+           (about.art) resimlerin yapay zekâ ile üretildiğini yazar.
+Filigran:  Google'ın görsellerinde görünmeyen SynthID filigranı vardır.
+
+İşleme: tool/prepare_art.py (16:9 resimler 1280x720, portreler 640x640
+merkezden kare kırpım; 2. bölüm kapağının boyalı kâğıt kenarı kırpıldı;
+üst veri silinmiş JPEG). Özgün dosyalar depoda tutulmaz.
+
+Dosya                       Nerede
+--------------------------  ------------------------------------------
+chapters/chapter1.jpg       1. bölüm kapağı; sefer sonu ekranı
+chapters/chapter2.jpg       2. bölüm kapağı
+chapters/chapter3.jpg       3. bölüm kapağı
+missions/m1.jpg ... m9.jpg  seyir defteri ve görev değerlendirmesi
+portraits/selvi.jpg         brifinglerde (komutan)
+portraits/kerem.jpg         1. görevin başarı değerlendirmesi
+portraits/surmeli.jpg       5. görevin brifingi (hedef)
+portraits/kuzgun.jpg        8. ve 9. görevlerin brifingi (hedef)
+
+Oyun içi çizimler (uçaklar, adalar, kokpit) görsel dosyası değildir;
+kodla çizilir (lib/game/).

@@ -1,4 +1,5 @@
 import '../audio/music.dart';
+import 'characters.dart';
 import '../game/bombing/bombing_sim.dart';
 import '../game/dogfight/dogfight_sim.dart';
 import '../game/raid/raid_sim.dart';
@@ -16,6 +17,8 @@ class MissionDef {
     this.raid,
     this.bombing,
     this.music,
+    this.briefBy = Character.selvi,
+    this.winBy,
   });
 
   final String id;
@@ -24,6 +27,15 @@ class MissionDef {
   final DogfightConfig? dogfight;
   final RaidConfig? raid;
   final BombingConfig? bombing;
+
+  /// Whose portrait sits beside the briefing: the commander, or the
+  /// pirate who is the target.
+  final Character briefBy;
+
+  /// A portrait for the debriefing after a win, when someone speaks.
+  final Character? winBy;
+
+  String get image => Art.mission(id);
 
   /// Overrides the mission type's usual music (the final battles).
   final MusicTrack? music;
@@ -47,6 +59,7 @@ const int chapterCount = 3;
 const List<MissionDef> campaignMissions = [
   MissionDef(
     id: 'm1',
+    winBy: Character.kerem,
     chapter: 1,
     kind: MissionKind.dogfight,
     dogfight: DogfightConfig(
@@ -96,6 +109,7 @@ const List<MissionDef> campaignMissions = [
   ),
   MissionDef(
     id: 'm5',
+    briefBy: Character.surmeli,
     chapter: 2,
     kind: MissionKind.dogfight,
     dogfight: DogfightConfig(
@@ -142,6 +156,7 @@ const List<MissionDef> campaignMissions = [
   ),
   MissionDef(
     id: 'm8',
+    briefBy: Character.kuzgun,
     music: MusicTrack.finale,
     chapter: 3,
     kind: MissionKind.dogfight,
@@ -160,6 +175,7 @@ const List<MissionDef> campaignMissions = [
   ),
   MissionDef(
     id: 'm9',
+    briefBy: Character.kuzgun,
     music: MusicTrack.finale,
     chapter: 3,
     kind: MissionKind.bombing,

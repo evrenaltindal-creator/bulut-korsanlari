@@ -5,7 +5,7 @@ import '../audio/music.dart';
 import 'music_cue.dart';
 
 import '../campaign/campaign.dart';
-import 'logbook_screen.dart';
+import 'chapter_screen.dart';
 import 'paper.dart';
 import 'scope.dart';
 import 'sky_backdrop.dart';
@@ -43,7 +43,7 @@ class _NewPilotScreenState extends State<NewPilotScreen> {
     await store.startCampaign(_name.text);
     if (!mounted) return;
     await Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const LogbookScreen()),
+      MaterialPageRoute<void>(builder: (_) => const ChapterScreen(chapter: 1)),
       (route) => route.isFirst,
     );
   }

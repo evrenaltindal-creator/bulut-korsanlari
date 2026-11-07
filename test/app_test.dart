@@ -1,5 +1,11 @@
 import 'package:bulut_korsanlari/audio/music.dart';
 import 'package:bulut_korsanlari/campaign/missions.dart';
+import 'package:bulut_korsanlari/campaign/characters.dart';
+import 'package:bulut_korsanlari/ui/art.dart';
+import 'package:bulut_korsanlari/ui/debrief_screen.dart';
+import 'package:bulut_korsanlari/ui/logbook_screen.dart';
+import 'package:bulut_korsanlari/ui/music_cue.dart';
+import 'package:bulut_korsanlari/ui/scope.dart';
 import 'package:bulut_korsanlari/campaign/store.dart';
 import 'package:bulut_korsanlari/game/bombing/bombing_sim.dart';
 import 'package:bulut_korsanlari/game/mission_result.dart';
@@ -47,8 +53,16 @@ void main() {
     await frames(tester, 30);
 
     expect(store.campaign?.activePilot.name, 'Deniz Kaya');
+    // The first chapter opens with its cover; a tap goes on.
+    expect(find.text('BÖLÜM 1'), findsOneWidget);
+    expect(find.text('İlk Rüzgâr'), findsOneWidget);
+    await tester.tap(find.text('İlk Rüzgâr'));
+    await frames(tester, 30);
+
     expect(find.text('Meyve Bahçeleri Üstünde'), findsOneWidget);
     expect(find.text('Uçuşa çık'), findsOneWidget);
+    expect(find.text('Komutan Selvi Ardıç'), findsOneWidget);
+    expect(find.byType(Illustration), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -86,6 +100,8 @@ void main() {
     await tester.tap(find.text('Görevi bırak'));
     await frames(tester, 40);
     expect(find.text('Hedef tutturulamadı'), findsOneWidget);
+    // The painting is stamped across.
+    expect(find.text('HEDEF TUTTURULAMADI'), findsOneWidget);
     expect(store.campaign!.missionIndex, 0);
     expect(store.campaign!.log.single.missionId, 'm1');
     expect(store.music.wanted, MusicTrack.defeat);
@@ -100,6 +116,60 @@ void main() {
     await frames(tester, 30);
     expect(find.text('Bulut Korsanları'), findsOneWidget);
     expect(store.music.wanted, MusicTrack.menu);
+  });
+
+  testWidgets('finishing a chapter opens the next chapter cover', (
+    tester,
+  ) async {
+    await landscape(tester);
+    final store = await freshStore();
+    await store.startCampaign('Ada');
+    // Fly straight to the last mission of chapter 1.
+    store.campaign!.missionIndex =
+        campaignMissions.indexWhere((m) => m.chapter == 2) - 1;
+    final debrief = await store.recordResult(
+      const MissionResult(outcome: MissionOutcome.success, kills: 3),
+    );
+    await tester.pumpWidget(
+      StoreScope(
+        store: store,
+        child: MaterialApp(
+          navigatorObservers: [musicRouteObserver],
+          home: DebriefScreen(debrief: debrief),
+        ),
+      ),
+    );
+    await frames(tester, 10);
+    expect(find.text('Görev başarılı'), findsOneWidget);
+    await tester.ensureVisible(find.text('Devam'));
+    await tester.tap(find.text('Devam'));
+    await frames(tester, 30);
+    expect(find.text('BÖLÜM 2'), findsOneWidget);
+    expect(find.text('Kara Bora'), findsOneWidget);
+    await tester.tap(find.text('Kara Bora'));
+    await frames(tester, 30);
+    expect(
+      find.text(AppStrings('tr').t(store.campaign!.currentMission.titleKey)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('pirates are briefed as the target', (tester) async {
+    await landscape(tester);
+    final store = await freshStore();
+    await store.startCampaign('Ada');
+    store.campaign!.missionIndex = campaignMissions.indexWhere(
+      (m) => m.briefBy == Character.surmeli,
+    );
+    await tester.pumpWidget(
+      StoreScope(
+        store: store,
+        child: const MaterialApp(home: LogbookScreen()),
+      ),
+    );
+    await frames(tester, 10);
+    expect(find.text('HEDEF'), findsOneWidget);
+    expect(find.text('Sürmeli'), findsOneWidget);
   });
 
   testWidgets('the music volume setting is saved and applied', (tester) async {

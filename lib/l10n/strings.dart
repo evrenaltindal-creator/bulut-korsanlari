@@ -35,6 +35,10 @@ const _tr = <String, String>{
   'about.music':
       'Müzik: Google Gemini (Lyria) ile yapay zekâ kullanılarak üretildi; '
       'promptlar bu oyun için yazıldı.',
+  'about.art':
+      'Hikâye resimleri ve portreler: Google Flow\'da Nano Banana Pro ile '
+      'yapay zekâ kullanılarak üretildi; promptlar bu oyun için yazıldı. '
+      'Oyun içi çizimler kodla yapılır.',
   'menu.newConfirm': 'Mevcut sefer silinecek. Emin misin?',
   'common.yes': 'Evet',
   'common.cancel': 'Vazgeç',
@@ -69,9 +73,18 @@ const _tr = <String, String>{
   'log.diary': 'Seyir defteri',
   'log.diaryEmpty': 'Henüz kayıt yok.',
 
+  'chapter.label': 'Bölüm {n}',
+  'chapter.tap': 'Devam etmek için dokun',
   'chapter.1': 'İlk Rüzgâr',
   'chapter.2': 'Kara Bora',
   'chapter.3': 'Fırtınanın Gözü',
+
+  'char.selvi': 'Komutan Selvi Ardıç',
+  'char.kerem': 'Usta Kerem',
+  'char.surmeli': 'Sürmeli',
+  'char.kuzgun': 'Kaptan Kuzgun',
+  'brief.officer': 'Brifing',
+  'brief.target': 'Hedef',
 
   'skill.gunnery': 'Nişancılık',
   'skill.handling': 'Pilotaj',
@@ -252,6 +265,10 @@ const _en = <String, String>{
   'about.music':
       'Music: generated with AI using Google Gemini (Lyria), from prompts '
       'written for this game.',
+  'about.art':
+      'Story paintings and portraits: generated with AI using Nano Banana Pro '
+      'in Google Flow, from prompts written for this game. In-game graphics '
+      'are drawn in code.',
   'menu.newConfirm': 'Your current campaign will be erased. Are you sure?',
   'common.yes': 'Yes',
   'common.cancel': 'Cancel',
@@ -287,9 +304,18 @@ const _en = <String, String>{
   'log.diary': 'Logbook',
   'log.diaryEmpty': 'No entries yet.',
 
+  'chapter.label': 'Chapter {n}',
+  'chapter.tap': 'Tap to continue',
   'chapter.1': 'First Wind',
   'chapter.2': 'The Black Squall',
   'chapter.3': 'Eye of the Storm',
+
+  'char.selvi': 'Commander Selvi Ardıç',
+  'char.kerem': 'Old Kerem',
+  'char.surmeli': 'Sürmeli',
+  'char.kuzgun': 'Captain Raven',
+  'brief.officer': 'Briefing',
+  'brief.target': 'Target',
 
   'skill.gunnery': 'Gunnery',
   'skill.handling': 'Handling',

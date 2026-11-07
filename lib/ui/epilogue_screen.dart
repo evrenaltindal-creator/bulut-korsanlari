@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../audio/music.dart';
-
+import '../campaign/characters.dart';
+import 'art.dart';
 import 'music_cue.dart';
-
 import 'new_pilot_screen.dart';
 import 'paper.dart';
 import 'scope.dart';
@@ -30,6 +30,9 @@ class EpilogueScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Home again: Meltem Island, where the story began.
+                        Illustration(asset: Art.chapter(1), tilt: -0.008),
+                        const SizedBox(height: 18),
                         Text(
                           context.tr('epilogue.title'),
                           style: const TextStyle(

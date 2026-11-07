@@ -255,6 +255,8 @@ void showAbout(BuildContext context) {
             Text(ctx.tr('about.body')),
             const SizedBox(height: 12),
             Text(ctx.tr('about.music')),
+            const SizedBox(height: 12),
+            Text(ctx.tr('about.art')),
           ],
         ),
       ),
