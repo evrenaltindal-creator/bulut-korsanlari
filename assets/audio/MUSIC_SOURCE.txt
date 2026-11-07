@@ -1,0 +1,30 @@
+Bulut Korsanları - müziklerin künyesi
+=====================================
+
+Araç:     Google Gemini uygulaması, müzik üretimi (Lyria)
+Tarih:    Kasım 2026 (dosyalar 7 Kasım 2026'da alındı)
+Promptlar: docs/audio/music_prompts.md (bu oyun için yazıldı)
+Hak:      Google Hizmet Şartları (30 Temmuz 2026): "Some of our services
+          allow you to generate original content. Google won't claim
+          ownership over that content." Aynı şartlar yapay zekâ içeriğini
+          insan yapımıymış gibi göstermeyi yasaklar; oyunun Hakkında
+          penceresi (about.music) müziğin Gemini ile üretildiğini yazar.
+Filigran: Gemini parçalarında duyulmayan SynthID filigranı vardır.
+
+İşleme: tool/prepare_music.py (sessizlik kırpma, -16 LUFS, 128 kbit/s
+CBR MP3). Özgün dosyalar depoda tutulmaz.
+
+Dosya                     Gemini'nin verdiği ad          Prompt
+------------------------  -----------------------------  ---------
+music/menu.mp3            Wings Over the Plateau         1. menu
+music/logbook.mp3         The Cartographer's Hour        2. logbook
+music/dogfight.mp3        Locked in the Turn             3. dogfight
+music/raid.mp3            Salt, Steel and Tide           4. raid
+music/bombing.mp3         The Uncharted Coast            5. bombing
+music/finale.mp3          Wings Against the Gale         6. finale
+music/victory.mp3         Golden Banner Raised           7. victory
+music/defeat.mp3          Iron and Air                   8. defeat
+music/ending.mp3          Triumph of the Tide            9. ending
+
+Eşleştirme dosya adlarından ve sesin ölçülen özelliklerinden (tempo,
+parlaklık, süre) çıkarıldı; parçalar dinlenerek doğrulanmadı.

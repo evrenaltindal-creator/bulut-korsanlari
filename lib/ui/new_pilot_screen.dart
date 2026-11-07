@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../audio/music.dart';
+
+import 'music_cue.dart';
+
 import '../campaign/campaign.dart';
 import 'logbook_screen.dart';
 import 'paper.dart';
@@ -46,80 +50,83 @@ class _NewPilotScreenState extends State<NewPilotScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SkyBackdrop(
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: PaperCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        context.tr('intro.title'),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
+    return MusicCue(
+      track: MusicTrack.menu,
+      child: Scaffold(
+        body: SkyBackdrop(
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: PaperCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          context.tr('intro.title'),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        context.tr('intro.body'),
-                        style: const TextStyle(fontSize: 15),
-                      ),
-                      const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _name,
-                              maxLength: 24,
-                              style: const TextStyle(
-                                color: AppColors.ink,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: context.tr('newPilot.name'),
-                                labelStyle: const TextStyle(
-                                  color: AppColors.inkSoft,
+                        const SizedBox(height: 8),
+                        Text(
+                          context.tr('intro.body'),
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _name,
+                                maxLength: 24,
+                                style: const TextStyle(
+                                  color: AppColors.ink,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                counterStyle: const TextStyle(
-                                  color: AppColors.inkSoft,
-                                ),
-                                enabledBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(
+                                decoration: InputDecoration(
+                                  labelText: context.tr('newPilot.name'),
+                                  labelStyle: const TextStyle(
                                     color: AppColors.inkSoft,
                                   ),
+                                  counterStyle: const TextStyle(
+                                    color: AppColors.inkSoft,
+                                  ),
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: AppColors.inkSoft,
+                                    ),
+                                  ),
+                                ),
+                                onSubmitted: (_) => _start(),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: context.tr('newPilot.random'),
+                              color: AppColors.ink,
+                              icon: const Icon(Icons.casino_outlined),
+                              onPressed: () => setState(
+                                () => _name.text = randomPilotName(
+                                  StoreScope.read(context).rng,
                                 ),
                               ),
-                              onSubmitted: (_) => _start(),
                             ),
-                          ),
-                          IconButton(
-                            tooltip: context.tr('newPilot.random'),
-                            color: AppColors.ink,
-                            icon: const Icon(Icons.casino_outlined),
-                            onPressed: () => setState(
-                              () => _name.text = randomPilotName(
-                                StoreScope.read(context).rng,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: FilledButton(
-                          onPressed: _starting ? null : _start,
-                          child: Text(context.tr('newPilot.start')),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: FilledButton(
+                            onPressed: _starting ? null : _start,
+                            child: Text(context.tr('newPilot.start')),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

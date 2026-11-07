@@ -1,3 +1,4 @@
+import '../audio/music.dart';
 import '../game/bombing/bombing_sim.dart';
 import '../game/dogfight/dogfight_sim.dart';
 import '../game/raid/raid_sim.dart';
@@ -14,6 +15,7 @@ class MissionDef {
     this.dogfight,
     this.raid,
     this.bombing,
+    this.music,
   });
 
   final String id;
@@ -22,6 +24,17 @@ class MissionDef {
   final DogfightConfig? dogfight;
   final RaidConfig? raid;
   final BombingConfig? bombing;
+
+  /// Overrides the mission type's usual music (the final battles).
+  final MusicTrack? music;
+
+  MusicTrack get musicTrack =>
+      music ??
+      switch (kind) {
+        MissionKind.dogfight => MusicTrack.dogfight,
+        MissionKind.raid => MusicTrack.raid,
+        MissionKind.bombing => MusicTrack.bombing,
+      };
 
   String get titleKey => '$id.title';
   String get briefKey => '$id.brief';
@@ -129,6 +142,7 @@ const List<MissionDef> campaignMissions = [
   ),
   MissionDef(
     id: 'm8',
+    music: MusicTrack.finale,
     chapter: 3,
     kind: MissionKind.dogfight,
     dogfight: DogfightConfig(
@@ -144,6 +158,7 @@ const List<MissionDef> campaignMissions = [
   ),
   MissionDef(
     id: 'm9',
+    music: MusicTrack.finale,
     chapter: 3,
     kind: MissionKind.bombing,
     bombing: BombingConfig(

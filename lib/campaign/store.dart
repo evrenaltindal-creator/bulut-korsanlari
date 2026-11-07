@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../audio/music.dart';
 import '../game/mission_result.dart';
 import '../l10n/strings.dart';
 import 'campaign.dart';
@@ -16,14 +17,24 @@ class GameStore extends ChangeNotifier {
     this._prefs, {
     required this.lang,
     required this.invertY,
+    required this.music,
+    required this.musicVolume,
     this.campaign,
   });
 
   static const _campaignKey = 'campaign_v1';
   static const _langKey = 'lang';
   static const _invertKey = 'invert_y';
+  static const _musicKey = 'music_volume';
+  static const defaultMusicVolume = 0.7;
 
-  static Future<GameStore> load({String? deviceLang}) async {
+  /// [backend] plays the music; without one the game stays silent.
+  /// Tests pass [autoTick] false and drive the music clock themselves.
+  static Future<GameStore> load({
+    String? deviceLang,
+    MusicBackend? backend,
+    bool autoTick = true,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final fallback = AppStrings.supported.contains(deviceLang)
         ? deviceLang!
@@ -40,10 +51,17 @@ class GameStore extends ChangeNotifier {
         debugPrint('Discarding unreadable save: $e');
       }
     }
+    final volume = prefs.getDouble(_musicKey) ?? defaultMusicVolume;
     return GameStore._(
       prefs,
       lang: prefs.getString(_langKey) ?? fallback,
       invertY: prefs.getBool(_invertKey) ?? false,
+      music: MusicDirector(
+        backend ?? SilentMusicBackend(),
+        volume: volume,
+        autoTick: backend != null && autoTick,
+      ),
+      musicVolume: volume,
       campaign: campaign,
     );
   }
@@ -53,6 +71,10 @@ class GameStore extends ChangeNotifier {
 
   String lang;
   bool invertY;
+  final MusicDirector music;
+
+  /// 0 (off) .. 1.
+  double musicVolume;
   Campaign? campaign;
 
   AppStrings get strings => AppStrings(lang);
@@ -69,6 +91,13 @@ class GameStore extends ChangeNotifier {
     invertY = value;
     notifyListeners();
     await _prefs.setBool(_invertKey, value);
+  }
+
+  Future<void> setMusicVolume(double value) async {
+    musicVolume = value.clamp(0.0, 1.0);
+    music.volume = musicVolume;
+    notifyListeners();
+    await _prefs.setDouble(_musicKey, musicVolume);
   }
 
   Future<void> startCampaign(String pilotName) async {

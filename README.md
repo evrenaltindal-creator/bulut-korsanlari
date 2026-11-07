@@ -1,8 +1,10 @@
 # Bulut Korsanları (Cloud Corsairs)
 
 Uçan adalar arasında geçen, hikâyeli bir uçuş oyunu. Flutter + Flame ile
-yazıldı; iOS, Android ve web'de çalışır. Tüm görseller kodla çizilir, dışarıdan
-görsel, ses ya da veri yüklenmez; oyun hiçbir sunucuyla konuşmaz.
+yazıldı; iOS, Android ve web'de çalışır. Tüm görseller kodla çizilir; oyun
+hiçbir sunucuyla konuşmaz. Müzik Google Gemini (Lyria) ile üretildi
+(künyesi `assets/audio/MUSIC_SOURCE.txt`, promptlar
+`docs/audio/music_prompts.md`).
 
 Türü ve görev yapısı 1990'ların seferli uçuş oyunlarından esinlenir
 (it dalaşı + alçak baskın + bombardıman, pilot kayıtları), ama dünya,
@@ -56,6 +58,8 @@ lib/
     mission_game.dart   Flame oyunu: girdi → ControlState → sim → çizim
     touch_controls.dart yüzen çubuk ve ateş bölgesi
   campaign/        görevler, pilot / sefer / günlük, kayıt (SharedPreferences)
+  audio/music.dart     müzik yöneticisi: ekranlar arası ve döngüde çapraz geçiş,
+                       duraklatmada kısma, arka planda durma
   l10n/strings.dart    tüm metinler (tr + en; anahtarlar test ile eşlenir)
   ui/              menü, seyir defteri, görev ekranı, değerlendirme, kayıtlar
 test/              matematik, simülasyonlar, sefer, metinler, widget akışı,
@@ -69,9 +73,21 @@ kazanabildiğini, aslarınsa çaylak için gerçek tehdit olduğunu bekçiler.
 Görev ayarlarını (düşman sayısı, hedefler, rüzgâr, bomba) değiştirirsen bu
 testi çalıştır.
 
+## Müzik
+
+Her ekran kendi parçasını `MusicCue` ile ister (`lib/ui/music_cue.dart`);
+geri dönülen ekran müziğini yeniden alır. Parçalar
+`tool/prepare_music.py` ile hazırlanır: sessizlik kırpılır, ses −16 LUFS'a
+eşitlenir, 128 kbit/s sabit bit hızlı MP3'e çevrilir (iOS, Android ve her
+tarayıcıda çalar; sabit bit hızı süreyi kesin kılar). Süreler
+`MusicTrack` içinde yazılıdır ve test dosya boyutuyla karşılaştırır.
+Parça değiştirirsen künyeyi ve süreyi de güncelle.
+
 ## Bilinen eksikler
 
-- Ses ve müzik yok.
+- Ses efektleri yok (müzik var).
+- Müzik gerçek telefonda denenmedi; tarayıcıda (Chromium) çaldığı ve
+  geçişlerin çalıştığı doğrulandı.
 - Gerçek telefonlarda denenmedi; tarayıcıda (Chromium) ve testlerde denendi.
 - Uygulama simgesi Flutter'ın varsayılanı; paket kimliği
   `com.bulutkorsanlari.bulut_korsanlari` yer tutucudur.

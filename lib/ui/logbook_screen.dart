@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../audio/music.dart';
+
+import 'music_cue.dart';
+
 import '../campaign/campaign.dart';
 import '../campaign/missions.dart';
 import 'epilogue_screen.dart';
@@ -92,50 +96,53 @@ class LogbookScreen extends StatelessWidget {
       ),
     );
 
-    return Scaffold(
-      body: SkyBackdrop(
-        child: SafeArea(
-          child: Stack(
-            children: [
-              LayoutBuilder(
-                builder: (context, c) {
-                  final wide = c.maxWidth > 760;
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1000),
-                        child: wide
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(width: 300, child: pilotCard),
-                                  const SizedBox(width: 16),
-                                  Expanded(child: briefCard),
-                                ],
-                              )
-                            : Column(
-                                children: [
-                                  briefCard,
-                                  const SizedBox(height: 12),
-                                  pilotCard,
-                                ],
-                              ),
+    return MusicCue(
+      track: MusicTrack.logbook,
+      child: Scaffold(
+        body: SkyBackdrop(
+          child: SafeArea(
+            child: Stack(
+              children: [
+                LayoutBuilder(
+                  builder: (context, c) {
+                    final wide = c.maxWidth > 760;
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1000),
+                          child: wide
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(width: 300, child: pilotCard),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: briefCard),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    briefCard,
+                                    const SizedBox(height: 12),
+                                    pilotCard,
+                                  ],
+                                ),
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              PositionedDirectional(
-                top: 4,
-                start: 4,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () =>
-                      Navigator.of(context).popUntil((r) => r.isFirst),
+                    );
+                  },
                 ),
-              ),
-            ],
+                PositionedDirectional(
+                  top: 4,
+                  start: 4,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () =>
+                        Navigator.of(context).popUntil((r) => r.isFirst),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

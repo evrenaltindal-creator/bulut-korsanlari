@@ -1,6 +1,8 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+import 'music_cue.dart';
+
 import '../campaign/missions.dart';
 import '../game/mission_game.dart';
 import '../game/mission_result.dart';
@@ -103,39 +105,43 @@ class _MissionScreenState extends State<MissionScreen> {
     final game = _game!;
     setState(() => _paused = value);
     value ? game.pauseEngine() : game.resumeEngine();
+    StoreScope.read(context).music.duck(value);
   }
 
   @override
   Widget build(BuildContext context) {
     final game = _game!;
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && !_done) _setPaused(true);
-      },
-      child: Scaffold(
-        body: Stack(
-          children: [
-            Positioned.fill(child: GameWidget(game: game, autofocus: true)),
-            PositionedDirectional(
-              top: MediaQuery.paddingOf(context).top + 6,
-              end: MediaQuery.paddingOf(context).right + 6,
-              child: IconButton.filledTonal(
-                tooltip: context.tr('pause.title'),
-                icon: const Icon(Icons.pause),
-                onPressed: _done ? null : () => _setPaused(true),
+    return MusicCue(
+      track: widget.mission.musicTrack,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop && !_done) _setPaused(true);
+        },
+        child: Scaffold(
+          body: Stack(
+            children: [
+              Positioned.fill(child: GameWidget(game: game, autofocus: true)),
+              PositionedDirectional(
+                top: MediaQuery.paddingOf(context).top + 6,
+                end: MediaQuery.paddingOf(context).right + 6,
+                child: IconButton.filledTonal(
+                  tooltip: context.tr('pause.title'),
+                  icon: const Icon(Icons.pause),
+                  onPressed: _done ? null : () => _setPaused(true),
+                ),
               ),
-            ),
-            if (_paused)
-              _PauseOverlay(
-                onResume: () => _setPaused(false),
-                onAbandon: () {
-                  _setPaused(false);
-                  game.pauseEngine();
-                  _finish(game.abandonResult());
-                },
-              ),
-          ],
+              if (_paused)
+                _PauseOverlay(
+                  onResume: () => _setPaused(false),
+                  onAbandon: () {
+                    _setPaused(false);
+                    game.pauseEngine();
+                    _finish(game.abandonResult());
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );

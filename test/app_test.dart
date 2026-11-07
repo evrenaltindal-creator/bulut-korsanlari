@@ -1,3 +1,4 @@
+import 'package:bulut_korsanlari/audio/music.dart';
 import 'package:bulut_korsanlari/campaign/missions.dart';
 import 'package:bulut_korsanlari/campaign/store.dart';
 import 'package:bulut_korsanlari/game/bombing/bombing_sim.dart';
@@ -62,18 +63,23 @@ void main() {
     expect(find.text('New campaign'), findsOneWidget);
   });
 
-  testWidgets('abandoning a mission leads to the debriefing', (tester) async {
+  testWidgets('abandoning a mission leads to the debriefing; music follows', (
+    tester,
+  ) async {
     await landscape(tester);
     final store = await freshStore();
     await store.startCampaign('Ece');
     await tester.pumpWidget(CloudCorsairsApp(store: store));
     await frames(tester, 3);
+    expect(store.music.wanted, MusicTrack.menu);
     await tester.tap(find.text('Devam et'));
     await frames(tester, 30);
+    expect(store.music.wanted, MusicTrack.logbook);
     await tester.ensureVisible(find.text('Uçuşa çık'));
     await tester.tap(find.text('Uçuşa çık'));
     await frames(tester, 40);
     expect(find.byIcon(Icons.pause), findsOneWidget);
+    expect(store.music.wanted, MusicTrack.dogfight);
 
     await tester.tap(find.byIcon(Icons.pause));
     await frames(tester, 3);
@@ -82,10 +88,43 @@ void main() {
     expect(find.text('Hedef tutturulamadı'), findsOneWidget);
     expect(store.campaign!.missionIndex, 0);
     expect(store.campaign!.log.single.missionId, 'm1');
+    expect(store.music.wanted, MusicTrack.defeat);
 
     await tester.tap(find.text('Devam'));
     await frames(tester, 30);
     expect(find.text('Bu görev yeniden deneniyor.'), findsOneWidget);
+    expect(store.music.wanted, MusicTrack.logbook);
+
+    // Back to the title: its music comes back too.
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await frames(tester, 30);
+    expect(find.text('Bulut Korsanları'), findsOneWidget);
+    expect(store.music.wanted, MusicTrack.menu);
+  });
+
+  testWidgets('the music volume setting is saved and applied', (tester) async {
+    await landscape(tester);
+    final store = await freshStore();
+    await tester.pumpWidget(CloudCorsairsApp(store: store));
+    await frames(tester, 3);
+    await tester.tap(find.text('Ayarlar'));
+    await frames(tester, 20);
+    expect(find.text('Müzik sesi'), findsOneWidget);
+    await store.setMusicVolume(0.3);
+    await frames(tester, 3);
+    expect(store.music.volume, closeTo(0.3, 1e-9));
+    final again = await GameStore.load(deviceLang: 'tr');
+    expect(again.musicVolume, closeTo(0.3, 1e-9));
+  });
+
+  testWidgets('the About box credits the music', (tester) async {
+    await landscape(tester);
+    final store = await freshStore();
+    await tester.pumpWidget(CloudCorsairsApp(store: store));
+    await frames(tester, 3);
+    await tester.tap(find.text('Hakkında'));
+    await frames(tester, 20);
+    expect(find.textContaining('Gemini'), findsOneWidget);
   });
 
   for (final kind in MissionKind.values) {

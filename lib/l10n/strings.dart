@@ -26,6 +26,15 @@ const _tr = <String, String>{
   'menu.roster': 'Filo kayıtları',
   'menu.settings': 'Ayarlar',
   'menu.howto': 'Nasıl oynanır',
+  'menu.about': 'Hakkında',
+  'about.title': 'Bulut Korsanları',
+  'about.body':
+      'Uçan adalar arasında geçen özgün bir uçuş oyunu. Dünya, hikâye, '
+      'karakterler ve bütün çizimler bu oyuna özgüdür. Oyun hiçbir sunucuyla '
+      'konuşmaz; kayıtlar yalnızca bu cihazda tutulur.',
+  'about.music':
+      'Müzik: Google Gemini (Lyria) ile yapay zekâ kullanılarak üretildi; '
+      'promptlar bu oyun için yazıldı.',
   'menu.newConfirm': 'Mevcut sefer silinecek. Emin misin?',
   'common.yes': 'Evet',
   'common.cancel': 'Vazgeç',
@@ -177,6 +186,7 @@ const _tr = <String, String>{
 
   'settings.title': 'Ayarlar',
   'settings.language': 'Dil',
+  'settings.music': 'Müzik sesi',
   'settings.invert': 'Ters dikey kontrol',
   'settings.invertHint': 'Açıkken çubuğu yukarı itmek burnu aşağı indirir.',
 
@@ -230,6 +240,15 @@ const _en = <String, String>{
   'menu.roster': 'Squadron records',
   'menu.settings': 'Settings',
   'menu.howto': 'How to play',
+  'menu.about': 'About',
+  'about.title': 'Cloud Corsairs',
+  'about.body':
+      'An original flying game set among floating islands. The world, the '
+      'story, the characters and all the drawings are made for this game. The '
+      'game never talks to a server; saves stay on this device.',
+  'about.music':
+      'Music: generated with AI using Google Gemini (Lyria), from prompts '
+      'written for this game.',
   'menu.newConfirm': 'Your current campaign will be erased. Are you sure?',
   'common.yes': 'Yes',
   'common.cancel': 'Cancel',
@@ -388,6 +407,7 @@ const _en = <String, String>{
 
   'settings.title': 'Settings',
   'settings.language': 'Language',
+  'settings.music': 'Music volume',
   'settings.invert': 'Invert vertical control',
   'settings.invertHint': 'When on, pushing the stick up dives.',
 
