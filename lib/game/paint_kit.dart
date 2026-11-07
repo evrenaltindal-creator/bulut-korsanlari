@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/painting.dart';
 
@@ -167,49 +168,158 @@ void paintFloatingIsland(
   if (unit < 1 || opacity <= 0.01) return;
   final rng = math.Random(seed);
   final a = opacity;
-  // Underside.
-  final under = Path()..moveTo(center.dx - unit, center.dy);
-  const steps = 7;
+  final detailed = unit > 14;
+  Color c(Color col, [double k = 1]) => col.withValues(alpha: a * k);
+
+  // Jagged rocky underside hanging to a point, with a lower ledge.
+  final points = <Offset>[Offset(center.dx - unit, center.dy)];
+  const steps = 11;
   for (var i = 1; i < steps; i++) {
     final t = i / steps;
     final x = center.dx - unit + t * unit * 2;
-    final depth = math.sin(t * math.pi) * unit * (0.9 + rng.nextDouble() * 0.5);
-    under.lineTo(x, center.dy + depth);
+    final base = math.pow(math.sin(t * math.pi), 1.4) * unit * 1.25;
+    final jag = (rng.nextDouble() - 0.4) * unit * 0.22;
+    points.add(Offset(x, center.dy + base + jag));
   }
-  under
-    ..lineTo(center.dx + unit, center.dy)
-    ..close();
-  canvas.drawPath(under, Paint()..color = Palette.rock.withValues(alpha: a));
-  // A darker band for depth.
-  final band = Path()
-    ..moveTo(center.dx - unit * 0.55, center.dy + unit * 0.15)
-    ..lineTo(center.dx, center.dy + unit * 1.1)
-    ..lineTo(center.dx + unit * 0.35, center.dy + unit * 0.2)
-    ..close();
+  points.add(Offset(center.dx + unit, center.dy));
+  final under = Path()..addPolygon(points, true);
   canvas.drawPath(
-    band,
-    Paint()..color = Palette.rockDark.withValues(alpha: a * 0.7),
+    under,
+    Paint()
+      ..shader = ui.Gradient.linear(
+        center,
+        center + Offset(0, unit * 1.3),
+        [c(Palette.rockLight), c(Palette.rock), c(Palette.rockDark)],
+        const [0, 0.35, 1],
+      ),
   );
-  // Grass top.
+  if (detailed) {
+    // Strata following the underside.
+    final strata = Paint()
+      ..color = c(Palette.rockDark, 0.45)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(1, unit * 0.025);
+    for (final f in [0.3, 0.55, 0.78]) {
+      final path = Path();
+      for (var i = 0; i < points.length; i++) {
+        final p = Offset.lerp(Offset(points[i].dx, center.dy), points[i], f)!;
+        i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
+      }
+      canvas.drawPath(path, strata);
+    }
+    // Shadowed side.
+    final shade = Path()
+      ..moveTo(center.dx + unit * 0.1, center.dy + unit * 0.12)
+      ..lineTo(points[steps ~/ 2 + 1].dx, points[steps ~/ 2 + 1].dy)
+      ..lineTo(center.dx + unit, center.dy)
+      ..close();
+    canvas.drawPath(shade, Paint()..color = c(Palette.rockDark, 0.35));
+    // Hanging roots.
+    final root = Paint()
+      ..color = c(const Color(0xFF5B4632), 0.8)
+      ..strokeWidth = math.max(1, unit * 0.02)
+      ..style = PaintingStyle.stroke;
+    for (var i = 0; i < 5; i++) {
+      final x = center.dx + (rng.nextDouble() - 0.5) * unit * 1.5;
+      final len = unit * (0.15 + rng.nextDouble() * 0.3);
+      final y0 = center.dy + unit * 0.08;
+      canvas.drawPath(
+        Path()
+          ..moveTo(x, y0)
+          ..quadraticBezierTo(
+            x + len * 0.2,
+            y0 + len * 0.5,
+            x - len * 0.1,
+            y0 + len,
+          ),
+        root,
+      );
+    }
+  }
+
+  // Grass top with an earthen lip.
   final top = Rect.fromCenter(
     center: center,
     width: unit * 2.1,
     height: unit * 0.42,
   );
-  canvas.drawOval(top, Paint()..color = Palette.grass.withValues(alpha: a));
+  canvas.drawOval(
+    top.translate(0, unit * 0.05),
+    Paint()..color = c(const Color(0xFF6B5136)),
+  );
+  canvas.drawOval(top, Paint()..color = c(Palette.grass));
   canvas.drawOval(
     top.deflate(unit * 0.08).translate(0, -unit * 0.04),
-    Paint()..color = Palette.grassLight.withValues(alpha: a),
+    Paint()..color = c(Palette.grassLight),
   );
-  // Trees.
-  final trees = 2 + rng.nextInt(4);
+
+  // A waterfall spilling off one edge, misting as it falls.
+  if (detailed && rng.nextDouble() < 0.7) {
+    final side = rng.nextBool() ? 1.0 : -1.0;
+    final x = center.dx + side * unit * (0.55 + rng.nextDouble() * 0.3);
+    final y0 = center.dy + unit * 0.12;
+    final len = unit * (1.3 + rng.nextDouble() * 0.6);
+    canvas.drawRect(
+      Rect.fromLTWH(x - unit * 0.035, y0, unit * 0.07, len),
+      Paint()
+        ..shader = ui.Gradient.linear(Offset(x, y0), Offset(x, y0 + len), [
+          c(const Color(0xFFE6F3FF), 0.9),
+          c(const Color(0xFFE6F3FF), 0),
+        ]),
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(x, y0),
+        width: unit * 0.16,
+        height: unit * 0.05,
+      ),
+      Paint()..color = c(const Color(0xFF8FC6E8)),
+    );
+  }
+
+  // Trees and the odd cottage.
+  final trees = 3 + rng.nextInt(5);
   for (var i = 0; i < trees; i++) {
-    final x = center.dx + (rng.nextDouble() - 0.5) * unit * 1.4;
-    final h = unit * (0.18 + rng.nextDouble() * 0.12);
+    final x = center.dx + (rng.nextDouble() - 0.5) * unit * 1.6;
+    final y = center.dy + (rng.nextDouble() - 0.5) * unit * 0.18;
+    final h = unit * (0.13 + rng.nextDouble() * 0.12);
+    if (detailed) {
+      canvas.drawLine(
+        Offset(x, y),
+        Offset(x, y - h * 0.8),
+        Paint()
+          ..color = c(Palette.woodDark)
+          ..strokeWidth = math.max(1, h * 0.15),
+      );
+    }
     canvas.drawCircle(
-      Offset(x, center.dy - h),
-      h * 0.75,
-      Paint()..color = Palette.grassDark.withValues(alpha: a),
+      Offset(x, y - h),
+      h * 0.62,
+      Paint()..color = c(Palette.grassDark),
+    );
+    if (detailed) {
+      canvas.drawCircle(
+        Offset(x - h * 0.18, y - h * 1.15),
+        h * 0.35,
+        Paint()..color = c(Palette.grass),
+      );
+    }
+  }
+  if (detailed && rng.nextDouble() < 0.6) {
+    final x = center.dx + (rng.nextDouble() - 0.5) * unit;
+    final y = center.dy - unit * 0.02;
+    final s = unit * 0.11;
+    canvas.drawRect(
+      Rect.fromLTWH(x - s, y - s, s * 2, s),
+      Paint()..color = c(const Color(0xFFE2D2B0)),
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(x - s * 1.25, y - s)
+        ..lineTo(x, y - s * 2)
+        ..lineTo(x + s * 1.25, y - s)
+        ..close(),
+      Paint()..color = c(const Color(0xFFB2583C)),
     );
   }
 }

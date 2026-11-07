@@ -112,6 +112,10 @@ class BombingSim implements MissionSim {
   final PilotSkills skills;
   final math.Random rng;
 
+  /// Random numbers for looks only (smoke, sparks, debris), kept apart
+  /// from [rng] so changing an effect never changes how a mission plays.
+  final math.Random fx = math.Random(99);
+
   final V3 plane = V3(0, startY, 0);
   double speed = 150;
   double vx = 0;
@@ -234,7 +238,7 @@ class BombingSim implements MissionSim {
     if (planeDown) {
       plane.y += speed * dt * 0.7;
       plane.x += vx * dt;
-      if (rng.nextDouble() < 0.6) _smoke(plane.copy());
+      if (fx.nextDouble() < 0.6) _smoke(plane.copy());
     } else {
       final handling = 0.85 + 0.45 * skills.handling;
       final targetVx = c.stickX.clamp(-1.0, 1.0) * 170 * handling;
@@ -253,11 +257,11 @@ class BombingSim implements MissionSim {
         t.y += t.vy * dt;
         if (t.x.abs() > 200) t.vx = -t.x.sign * t.vx.abs();
       }
-      if (!t.alive && rng.nextDouble() < dt * 5) {
+      if (!t.alive && fx.nextDouble() < dt * 5) {
         _smoke(
           V3(
-            t.x + (rng.nextDouble() - 0.5) * 20,
-            t.y + (rng.nextDouble() - 0.5) * 20,
+            t.x + (fx.nextDouble() - 0.5) * 20,
+            t.y + (fx.nextDouble() - 0.5) * 20,
             0,
           ),
         );
@@ -330,8 +334,8 @@ class BombingSim implements MissionSim {
           kind: EffectKind.debris,
           pos: at.copy(),
           vel: V3(
-            (rng.nextDouble() - 0.5) * 140,
-            (rng.nextDouble() - 0.5) * 140,
+            (fx.nextDouble() - 0.5) * 140,
+            (fx.nextDouble() - 0.5) * 140,
             0,
           ),
           life: 0.7,

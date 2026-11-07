@@ -5,6 +5,7 @@ import '../../core/effects.dart';
 import '../../core/v3.dart';
 import '../paint_kit.dart';
 import 'camera3.dart';
+import 'cockpit_painter.dart';
 import 'dogfight_sim.dart';
 
 class _Face {
@@ -17,67 +18,134 @@ class _Face {
 /// Model units to world units for the pirate fighter.
 const double pirateModelScale = 2.8;
 
-/// An original sky-pirate fighter: stubby wooden hull, canvas wings and a
-/// tall patched sail as its tail fin.
+/// Paint schemes: scouts in sun-bleached canvas, raiders in soot grey,
+/// the aces in black and gold.
+({Color hull, Color wing, Color band, Color sail}) _scheme(PirateClass cls) =>
+    switch (cls) {
+      PirateClass.scout => (
+        hull: Palette.pirateHull,
+        wing: Palette.pirateWing,
+        band: Palette.pirateSail,
+        sail: Palette.pirateSail,
+      ),
+      PirateClass.raider => (
+        hull: const Color(0xFF3A2C26),
+        wing: const Color(0xFF7C7A72),
+        band: const Color(0xFFC9452F),
+        sail: const Color(0xFF8E2420),
+      ),
+      PirateClass.ace => (
+        hull: const Color(0xFF1C1A1E),
+        wing: const Color(0xFF2B2A30),
+        band: Palette.aceTrim,
+        sail: Palette.aceSail,
+      ),
+    };
+
+/// An original sky-pirate biplane: stubby wooden hull, two canvas wings
+/// joined by struts, painted wing-tip bands, wheels, and a tall patched
+/// sail as its tail fin.
 List<_Face> _pirateModel(PirateClass cls) {
   const s = pirateModelScale;
   V3 p(double x, double y, double z) => V3(x * s, y * s, z * s);
-  final sail = cls == PirateClass.ace ? Palette.aceSail : Palette.pirateSail;
-  final trim = cls == PirateClass.ace ? Palette.aceTrim : Palette.pirateWing;
+  final c = _scheme(cls);
   final nose = p(0, 0, 9);
   final tl = p(-1.3, 1.1, 2);
   final tr = p(1.3, 1.1, 2);
   final br = p(1.3, -1.0, 2);
   final bl = p(-1.3, -1.0, 2);
   final tail = p(0, 0.4, -9);
-  const hull = Palette.pirateHull;
+  const strut = Color(0xFF3A2414);
+
+  // A wing panel between x0 and x1 (x0 < x1) at height y.
+  _Face panel(double x0, double x1, double y, Color color) => _Face([
+    p(x0, y, 1.5),
+    p(x1, y, 1.5),
+    p(x1, y, -1.6),
+    p(x0, y, -1.6),
+  ], color);
+  // A thin vertical strut seen edge-on from any side: two crossed quads.
+  List<_Face> post(double x, double y0, double y1, double z) => [
+    _Face([
+      p(x - 0.15, y0, z),
+      p(x + 0.15, y0, z),
+      p(x + 0.15, y1, z),
+      p(x - 0.15, y1, z),
+    ], strut),
+    _Face([
+      p(x, y0, z - 0.2),
+      p(x, y0, z + 0.2),
+      p(x, y1, z + 0.2),
+      p(x, y1, z - 0.2),
+    ], strut),
+  ];
+
   return [
+    // Lower wing.
+    panel(-8.5, -1.3, 0.1, c.wing),
+    panel(1.3, 8.5, 0.1, c.wing),
+    // Upper wing, with painted tips.
+    panel(-10, -7.8, 3.4, c.band),
+    panel(-7.8, 7.8, 3.4, c.wing),
+    panel(7.8, 10, 3.4, c.band),
+    ...post(-6.6, 0.1, 3.4, 0),
+    ...post(6.6, 0.1, 3.4, 0),
+    ...post(-1.1, 1.1, 3.4, 0.6),
+    ...post(1.1, 1.1, 3.4, 0.6),
+    // Hull.
+    _Face([nose, tr, tl], c.hull),
+    _Face([nose, br, tr], c.hull),
+    _Face([nose, bl, br], c.hull),
+    _Face([nose, tl, bl], c.hull),
+    _Face([tail, tl, tr], c.hull),
+    _Face([tail, tr, br], c.hull),
+    _Face([tail, br, bl], c.hull),
+    _Face([tail, bl, tl], c.hull),
+    // Engine cowl ring.
     _Face([
-      p(-1.3, 0.2, 3.5),
-      p(-9.5, 0.7, 1.2),
-      p(-9, 0.7, -1.4),
-      p(-1.3, 0.2, -1),
-    ], Palette.pirateWing),
+      p(-1, 0.9, 8),
+      p(1, 0.9, 8),
+      p(1, -0.8, 8),
+      p(-1, -0.8, 8),
+    ], const Color(0xFF26231F)),
+    // Wheels and their legs.
+    ...post(-1.4, -2.4, -1.0, 4),
+    ...post(1.4, -2.4, -1.0, 4),
     _Face([
-      p(1.3, 0.2, 3.5),
-      p(9.5, 0.7, 1.2),
-      p(9, 0.7, -1.4),
-      p(1.3, 0.2, -1),
-    ], Palette.pirateWing),
-    _Face([p(-9.5, 0.75, 1.2), p(-10.2, 1.4, 0), p(-9, 0.75, -1.4)], trim),
-    _Face([p(9.5, 0.75, 1.2), p(10.2, 1.4, 0), p(9, 0.75, -1.4)], trim),
-    _Face([nose, tr, tl], hull),
-    _Face([nose, br, tr], hull),
-    _Face([nose, bl, br], hull),
-    _Face([nose, tl, bl], hull),
-    _Face([tail, tl, tr], hull),
-    _Face([tail, tr, br], hull),
-    _Face([tail, br, bl], hull),
-    _Face([tail, bl, tl], hull),
+      p(-1.4, -2.0, 4.6),
+      p(-1.4, -2.9, 4),
+      p(-1.4, -2.0, 3.4),
+    ], const Color(0xFF151515)),
+    _Face([
+      p(1.4, -2.0, 4.6),
+      p(1.4, -2.9, 4),
+      p(1.4, -2.0, 3.4),
+    ], const Color(0xFF151515)),
+    // Tailplane and the sail fin.
     _Face([
       p(-3.6, 0.4, -7.2),
       p(3.6, 0.4, -7.2),
       p(3.1, 0.4, -9),
       p(-3.1, 0.4, -9),
-    ], Palette.pirateWing),
+    ], c.wing),
     _Face([
       p(0, 0.9, -4.5),
       p(0, 5.6, -8.2),
       p(0, 4.4, -9.6),
       p(0, 0.6, -9),
-    ], sail),
+    ], c.sail),
   ];
 }
 
 class DogfightPainter {
-  DogfightPainter(this.sim, this.tr) {
+  DogfightPainter(this.sim, this.tr) : cockpit = CockpitPainter(sim, tr) {
     final rng = math.Random(sim.config.seed * 31 + 7);
-    for (var i = 0; i < 34; i++) {
+    for (var i = 0; i < 30; i++) {
       _clouds.add(
         _CloudSlot(
           V3(
             (rng.nextDouble() - 0.5) * _cloudBox * 2,
-            DogfightSim.floorY + 120 + rng.nextDouble() * 2300,
+            DogfightSim.floorY + 250 + rng.nextDouble() * 2200,
             (rng.nextDouble() - 0.5) * _cloudBox * 2,
           ),
           CloudShape(rng, puffs: 4 + rng.nextInt(3)),
@@ -85,13 +153,27 @@ class DogfightPainter {
         ),
       );
     }
-    for (var i = 0; i < 9; i++) {
-      final a = i / 9 * math.pi * 2 + rng.nextDouble() * 0.4;
-      final r = 6000 + rng.nextDouble() * 4000;
+    // The tops of the cloud sea: a dense field of cumulus below the plane.
+    for (var i = 0; i < 70; i++) {
+      _floor.add(
+        _CloudSlot(
+          V3(
+            (rng.nextDouble() - 0.5) * _floorBox * 2,
+            DogfightSim.floorY - 40 + rng.nextDouble() * 70,
+            (rng.nextDouble() - 0.5) * _floorBox * 2,
+          ),
+          CloudShape(rng, puffs: 6),
+          150 + rng.nextDouble() * 170,
+        ),
+      );
+    }
+    for (var i = 0; i < 11; i++) {
+      final a = i / 11 * math.pi * 2 + rng.nextDouble() * 0.4;
+      final r = 3800 + rng.nextDouble() * 6000;
       _islands.add(
         _IslandSlot(
-          V3(math.sin(a) * r, 300 + rng.nextDouble() * 1400, math.cos(a) * r),
-          380 + rng.nextDouble() * 520,
+          V3(math.sin(a) * r, 250 + rng.nextDouble() * 1500, math.cos(a) * r),
+          320 + rng.nextDouble() * 560,
           rng.nextInt(1 << 20),
         ),
       );
@@ -102,12 +184,15 @@ class DogfightPainter {
   }
 
   static const double _cloudBox = 2600;
+  static const double _floorBox = 3200;
   static const double _islandBox = 12000;
   static final V3 _sunDir = V3.fromAngles(0.7, 0.32);
 
   final DogfightSim sim;
   final Tr tr;
+  final CockpitPainter cockpit;
   final List<_CloudSlot> _clouds = [];
+  final List<_CloudSlot> _floor = [];
   final List<_IslandSlot> _islands = [];
   final Map<PirateClass, List<_Face>> _models = {};
 
@@ -116,7 +201,18 @@ class DogfightPainter {
       sim.player,
       width: size.width,
       height: size.height,
+      rollFactor: 1,
+      centerY: CockpitPainter.viewCenter,
     );
+    canvas.save();
+    // A hit shakes the whole cockpit.
+    final shake = sim.playerHitFlash;
+    if (shake > 0) {
+      canvas.translate(
+        math.sin(sim.time * 97) * 5 * shake,
+        math.cos(sim.time * 83) * 4 * shake,
+      );
+    }
     _paintSky(canvas, size, cam);
 
     final items = <_Drawable>[];
@@ -130,44 +226,56 @@ class DogfightPainter {
       );
       final pr = cam.project(pos);
       if (pr == null) continue;
-      final d = pr.depth;
-      final fade = 1 - smoothstep(7000, 11000, d);
+      final fade = 1 - smoothstep(7000, 11000, pr.depth);
       items.add(
-        _Drawable(d, () {
+        _Drawable(pr.depth, () {
           _billboard(canvas, cam, pr, () {
             paintFloatingIsland(
               canvas,
               Offset.zero,
               isl.radius * pr.scale,
               isl.seed,
-              opacity: fade * 0.95,
+              opacity: fade * 0.97,
             );
           });
         }),
       );
     }
 
-    for (final c in _clouds) {
-      final pos = V3(
-        pp.x + wrapCentered(c.pos.x - pp.x, _cloudBox),
-        c.pos.y,
-        pp.z + wrapCentered(c.pos.z - pp.z, _cloudBox),
-      );
-      final pr = cam.project(pos);
-      if (pr == null) continue;
-      final d = pr.depth;
-      final fade = (1 - smoothstep(1700, 2500, d)) * smoothstep(60, 260, d);
-      items.add(
-        _Drawable(d, () {
-          c.shape.paint(
-            canvas,
-            Offset(pr.x, pr.y),
-            c.size * pr.scale,
-            fade * 0.85,
-          );
-        }),
-      );
+    void addClouds(
+      List<_CloudSlot> slots,
+      double box,
+      double far,
+      double opacity,
+    ) {
+      for (final c in slots) {
+        final pos = V3(
+          pp.x + wrapCentered(c.pos.x - pp.x, box),
+          c.pos.y,
+          pp.z + wrapCentered(c.pos.z - pp.z, box),
+        );
+        final pr = cam.project(pos);
+        if (pr == null) continue;
+        final fade =
+            (1 - smoothstep(far * 0.7, far, pr.depth)) *
+            smoothstep(60, 260, pr.depth);
+        items.add(
+          _Drawable(pr.depth, () {
+            _billboard(canvas, cam, pr, () {
+              c.shape.paint(
+                canvas,
+                Offset.zero,
+                c.size * pr.scale,
+                fade * opacity,
+              );
+            });
+          }),
+        );
+      }
     }
+
+    addClouds(_floor, _floorBox, 3200, 0.95);
+    addClouds(_clouds, _cloudBox, 2500, 0.85);
 
     for (final e in sim.pirates) {
       final center = cam.project(e.pos);
@@ -183,14 +291,24 @@ class DogfightPainter {
       if (head == null || tail == null || tail.depth < 40) continue;
       items.add(
         _Drawable(head.depth, () {
+          final color = b.fromPlayer
+              ? const Color(0xFFFFF0A0)
+              : const Color(0xFFFF8A65);
+          final width = (2.4 * head.scale).clamp(1.2, 3.5);
           canvas.drawLine(
             Offset(tail.x, tail.y),
             Offset(head.x, head.y),
             Paint()
-              ..color = b.fromPlayer
-                  ? const Color(0xFFFFF0A0)
-                  : const Color(0xFFFF8A65)
-              ..strokeWidth = (2.4 * head.scale).clamp(1.2, 3.5)
+              ..color = color.withValues(alpha: 0.35)
+              ..strokeWidth = width * 3
+              ..strokeCap = StrokeCap.round,
+          );
+          canvas.drawLine(
+            Offset(tail.x, tail.y),
+            Offset(head.x, head.y),
+            Paint()
+              ..color = color
+              ..strokeWidth = width
               ..strokeCap = StrokeCap.round,
           );
         }),
@@ -208,17 +326,15 @@ class DogfightPainter {
       it.draw();
     }
 
-    _paintPlayerPlane(canvas, size);
-    _paintCrosshair(canvas, cam);
     _paintIndicators(canvas, size, cam, safe);
-    _paintRadar(canvas, safe);
-    _paintHud(canvas, size, safe);
+    cockpit.paint(canvas, size, safe, cam);
+    canvas.restore();
 
     if (sim.playerHitFlash > 0) {
       canvas.drawRect(
         Offset.zero & size,
         Paint()
-          ..color = Palette.danger.withValues(alpha: 0.22 * sim.playerHitFlash),
+          ..color = Palette.danger.withValues(alpha: 0.18 * sim.playerHitFlash),
       );
     }
   }
@@ -242,9 +358,8 @@ class DogfightPainter {
     canvas.save();
     canvas.translate(cam.cx, cam.cy);
     canvas.rotate(-cam.roll);
-    final skyRect = Rect.fromLTRB(-diag, h - diag * 1.6, diag, h);
     canvas.drawRect(
-      skyRect,
+      Rect.fromLTRB(-diag * 2, h - diag * 3, diag * 2, h),
       Paint()
         ..shader = Gradient.linear(
           Offset(0, h - diag * 0.9),
@@ -253,9 +368,21 @@ class DogfightPainter {
           const [0, 0.65, 1],
         ),
     );
-    final seaRect = Rect.fromLTRB(-diag, h, diag, h + diag * 1.6);
+    // High, thin streaks of cirrus.
+    final cirrus = Paint()
+      ..color = const Color(0x22FFFFFF)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    for (var k = 0; k < 9; k++) {
+      final y = h - diag * (0.25 + (k * 37 % 50) / 100);
+      final span = diag * (0.3 + (k % 3) * 0.15);
+      final x =
+          ((k * 911 - sim.player.yaw * diag * 0.6) % (diag * 3)) - diag * 1.5;
+      cirrus.strokeWidth = 3.0 + (k % 3) * 2;
+      canvas.drawLine(Offset(x, y), Offset(x + span, y - span * 0.05), cirrus);
+    }
     canvas.drawRect(
-      seaRect,
+      Rect.fromLTRB(-diag * 2, h, diag * 2, h + diag * 3),
       Paint()
         ..shader = Gradient.linear(
           Offset(0, h),
@@ -265,42 +392,39 @@ class DogfightPainter {
     );
     // Haze along the horizon.
     canvas.drawRect(
-      Rect.fromLTRB(-diag, h - 22, diag, h + 18),
+      Rect.fromLTRB(-diag * 2, h - 26, diag * 2, h + 18),
       Paint()
         ..shader = Gradient.linear(
-          Offset(0, h - 22),
+          Offset(0, h - 26),
           Offset(0, h + 18),
-          const [Color(0x00FFFFFF), Color(0x88FFF3E2), Color(0x00FFFFFF)],
+          const [Color(0x00FFFFFF), Color(0x99FFF3E2), Color(0x00FFFFFF)],
           const [0, 0.55, 1],
         ),
     );
-    // Lumpy cloud-sea ripples that slide as the plane turns.
-    final ripplePaint = Paint()..color = const Color(0x33FFFFFF);
-    for (var row = 1; row < 6; row++) {
-      final y = h + row * row * 9.0;
-      final step = 60.0 + row * 30;
-      final phase = (sim.player.yaw * 900 * row / 3) % step;
-      for (var x = -diag - phase; x < diag; x += step) {
-        canvas.drawOval(
-          Rect.fromCenter(
-            center: Offset(x, y),
-            width: step * 0.8,
-            height: 4.0 + row * 2,
-          ),
-          ripplePaint,
-        );
-      }
-    }
     canvas.restore();
 
     final sun = cam.projectDir(_sunDir);
     if (sun != null) {
-      paintGlow(canvas, Offset(sun.x, sun.y), 120, const Color(0x66FFE8B0));
-      canvas.drawCircle(
-        Offset(sun.x, sun.y),
-        22,
-        Paint()..color = const Color(0xFFFFF4D6),
-      );
+      final s = Offset(sun.x, sun.y);
+      paintGlow(canvas, s, 160, const Color(0x55FFE8B0));
+      // Soft rays.
+      final ray = Paint()..color = const Color(0x10FFF4D6);
+      for (var k = 0; k < 8; k++) {
+        final a = k * math.pi / 4 + sim.time * 0.02;
+        final path = Path()
+          ..moveTo(s.dx, s.dy)
+          ..lineTo(
+            s.dx + math.cos(a - 0.06) * 260,
+            s.dy + math.sin(a - 0.06) * 260,
+          )
+          ..lineTo(
+            s.dx + math.cos(a + 0.06) * 260,
+            s.dy + math.sin(a + 0.06) * 260,
+          )
+          ..close();
+        canvas.drawPath(path, ray);
+      }
+      canvas.drawCircle(s, 22, Paint()..color = const Color(0xFFFFF4D6));
     }
   }
 
@@ -335,7 +459,7 @@ class DogfightPainter {
       final c = face.points[2];
       final nLocal = (b - a).cross(c - a).normalized();
       final n = (r * nLocal.x + u * nLocal.y + f * nLocal.z).normalized();
-      final light = 0.62 + 0.45 * n.dot(_sunDir).abs();
+      final light = 0.6 + 0.48 * n.dot(_sunDir).abs();
       var color = _shade(face.color, light);
       if (e.hitFlash > 0) {
         color = Color.lerp(color, const Color(0xFFFFFFFF), e.hitFlash * 0.6)!;
@@ -344,15 +468,19 @@ class DogfightPainter {
       projected.add((depth / face.points.length, path, color));
     }
     projected.sort((a, b) => b.$1.compareTo(a.$1));
+    final center = cam.project(e.pos);
+    final outline = center != null && center.scale > 0.6;
     for (final (_, path, color) in projected) {
       canvas.drawPath(path, Paint()..color = color);
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = const Color(0x55000000)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.8,
-      );
+      if (outline) {
+        canvas.drawPath(
+          path,
+          Paint()
+            ..color = const Color(0x55000000)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 0.8,
+        );
+      }
     }
     // Spinning propeller disc on the nose.
     final nose = cam.project(e.pos + f * (9.6 * pirateModelScale));
@@ -376,29 +504,54 @@ class DogfightPainter {
     final fade = 1 - fx.t;
     switch (fx.kind) {
       case EffectKind.spark:
+        paintGlow(
+          canvas,
+          o,
+          r * 2.5,
+          Color.fromRGBO(255, 230, 150, 0.6 * fade),
+        );
         canvas.drawCircle(
           o,
           r,
-          Paint()..color = Color.fromRGBO(255, 240, 170, fade),
+          Paint()..color = Color.fromRGBO(255, 245, 200, fade),
         );
       case EffectKind.fire:
-        paintGlow(canvas, o, r * 1.8, Color.fromRGBO(255, 170, 60, 0.8 * fade));
+        paintGlow(
+          canvas,
+          o,
+          r * 2.2,
+          Color.fromRGBO(255, 150, 50, 0.75 * fade),
+        );
         canvas.drawCircle(
           o,
-          r * 0.7,
-          Paint()..color = Color.fromRGBO(255, 220, 120, fade),
+          r,
+          Paint()..color = Color.fromRGBO(255, 190, 80, 0.9 * fade),
+        );
+        canvas.drawCircle(
+          o - Offset(r * 0.2, r * 0.2),
+          r * 0.55,
+          Paint()..color = Color.fromRGBO(255, 245, 190, fade),
         );
       case EffectKind.smoke:
         canvas.drawCircle(
-          o,
+          o + Offset(r * 0.15, r * 0.15),
           r,
-          Paint()..color = Color.fromRGBO(60, 60, 66, 0.45 * fade),
+          Paint()..color = Color.fromRGBO(30, 30, 34, 0.35 * fade),
+        );
+        canvas.drawCircle(
+          o,
+          r * 0.85,
+          Paint()..color = Color.fromRGBO(85, 85, 92, 0.45 * fade),
         );
       case EffectKind.debris:
+        canvas.save();
+        canvas.translate(o.dx, o.dy);
+        canvas.rotate(fx.age * 9 + fx.size0);
         canvas.drawRect(
-          Rect.fromCenter(center: o, width: r * 1.6, height: r),
+          Rect.fromCenter(center: Offset.zero, width: r * 2, height: r * 0.9),
           Paint()..color = Color.fromRGBO(70, 45, 30, fade),
         );
+        canvas.restore();
       case EffectKind.flak:
       case EffectKind.splash:
         canvas.drawCircle(
@@ -409,127 +562,16 @@ class DogfightPainter {
     }
   }
 
-  /// The player's own fighter, seen from behind, tilted by the part of the
-  /// bank the camera does not show.
-  void _paintPlayerPlane(Canvas canvas, Size size) {
-    final span = math.min(size.width, size.height) * 0.5;
-    final center = Offset(size.width / 2, size.height * 0.86);
-    final p = sim.player;
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(p.roll * 0.3);
-    final bob = math.sin(sim.time * 2.1) * span * 0.006;
-    canvas.translate(0, bob);
-    final wing = Paint()..color = Palette.playerWing;
-    final body = Paint()..color = Palette.playerBody;
-    final brass = Paint()..color = Palette.brass;
-    final dark = Paint()..color = const Color(0xFF1B4B4D);
-    // Lower wing.
-    final lw = Path()
-      ..moveTo(-span * 0.5, span * 0.02)
-      ..lineTo(span * 0.5, span * 0.02)
-      ..lineTo(span * 0.46, span * 0.075)
-      ..lineTo(-span * 0.46, span * 0.075)
-      ..close();
-    canvas.drawPath(lw, wing);
-    canvas.drawPath(
-      lw,
-      Paint()
-        ..color = const Color(0x55000000)
-        ..style = PaintingStyle.stroke,
-    );
-    // Wing-tip brass caps.
-    canvas.drawCircle(Offset(-span * 0.49, span * 0.045), span * 0.022, brass);
-    canvas.drawCircle(Offset(span * 0.49, span * 0.045), span * 0.022, brass);
-    // Fuselage (rounded, seen from behind).
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(0, span * 0.02),
-        width: span * 0.16,
-        height: span * 0.2,
-      ),
-      body,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(0, -span * 0.01),
-        width: span * 0.1,
-        height: span * 0.1,
-      ),
-      dark,
-    );
-    // Tailplane.
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(0, span * 0.07),
-          width: span * 0.34,
-          height: span * 0.03,
-        ),
-        Radius.circular(span * 0.015),
-      ),
-      body,
-    );
-    // Fin with a compass-rose emblem.
-    final fin = Path()
-      ..moveTo(-span * 0.018, span * 0.05)
-      ..lineTo(-span * 0.012, -span * 0.12)
-      ..lineTo(span * 0.012, -span * 0.12)
-      ..lineTo(span * 0.018, span * 0.05)
-      ..close();
-    canvas.drawPath(fin, body);
-    canvas.drawCircle(Offset(0, -span * 0.06), span * 0.012, brass);
-    // Muzzle flashes at the wing guns.
-    if (sim.muzzleFlash > 0) {
-      final a = sim.muzzleFlash;
-      paintGlow(
-        canvas,
-        Offset(-span * 0.16, span * 0.01),
-        span * 0.05,
-        Color.fromRGBO(255, 230, 140, a),
-      );
-      paintGlow(
-        canvas,
-        Offset(span * 0.16, span * 0.01),
-        span * 0.05,
-        Color.fromRGBO(255, 230, 140, a),
-      );
-    }
-    if (sim.health < 0.4) {
-      final k = (0.4 - sim.health) / 0.4;
-      paintGlow(
-        canvas,
-        Offset(span * 0.05, -span * 0.02),
-        span * 0.12 * (0.6 + k),
-        Color.fromRGBO(40, 40, 40, 0.5 * k),
-      );
-    }
-    canvas.restore();
-  }
-
-  void _paintCrosshair(Canvas canvas, Camera3 cam) {
-    final c = Offset(cam.cx, cam.cy);
-    final color = sim.jammed ? Palette.danger : Palette.hud;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6;
-    canvas.drawCircle(c, 16, paint);
-    for (var i = 0; i < 4; i++) {
-      final a = i * math.pi / 2;
-      final d = Offset(math.cos(a), math.sin(a));
-      canvas.drawLine(c + d * 10, c + d * 22, paint);
-    }
-    canvas.drawCircle(c, 1.8, Paint()..color = color);
-  }
-
   void _paintIndicators(
     Canvas canvas,
     Size size,
     Camera3 cam,
     EdgeInsetsLike safe,
   ) {
-    const margin = 34.0;
+    const margin = 30.0;
+    // Only the part of the screen the cockpit leaves open.
+    final viewTop = cockpit.wingBottom(size) + margin;
+    final viewBottom = size.height * CockpitPainter.dashMid - 4;
     for (final e in sim.pirates) {
       if (!e.alive) continue;
       final color = e.cls == PirateClass.ace ? Palette.aceTrim : Palette.danger;
@@ -538,8 +580,8 @@ class DogfightPainter {
           pr != null &&
           pr.x > margin &&
           pr.x < size.width - margin &&
-          pr.y > margin &&
-          pr.y < size.height - margin;
+          pr.y > viewTop &&
+          pr.y < viewBottom;
       if (onScreen) {
         final box = math.max(14.0, 12 * pirateModelScale * pr.scale);
         final paint = Paint()
@@ -563,10 +605,9 @@ class DogfightPainter {
           canvas.drawLine(corner, corner + Offset(box * 2 * k * dx, 0), paint);
           canvas.drawLine(corner, corner + Offset(0, box * 2 * k * dy), paint);
         }
-        final dist = pr.depth.round();
         paintLabel(
           canvas,
-          '${dist}m',
+          '${pr.depth.round()}m',
           Offset(pr.x, rect.bottom + 3),
           size: 11,
           color: color,
@@ -579,12 +620,11 @@ class DogfightPainter {
       var dy = -c.y;
       if (dx.abs() < 1e-3 && dy.abs() < 1e-3) dy = 1;
       final ang = math.atan2(dy, dx);
+      final cx = size.width / 2;
+      final cy = (viewTop + viewBottom) / 2;
       final rx = size.width / 2 - margin - math.max(safe.left, safe.right);
-      final ry = size.height / 2 - margin - math.max(safe.top, safe.bottom);
-      final pos = Offset(
-        size.width / 2 + math.cos(ang) * rx,
-        size.height / 2 + math.sin(ang) * ry,
-      );
+      final ry = (viewBottom - viewTop) / 2;
+      final pos = Offset(cx + math.cos(ang) * rx, cy + math.sin(ang) * ry);
       canvas.save();
       canvas.translate(pos.dx, pos.dy);
       canvas.rotate(ang);
@@ -594,119 +634,14 @@ class DogfightPainter {
         ..lineTo(-6, 9)
         ..close();
       canvas.drawPath(tri, Paint()..color = color.withValues(alpha: 0.9));
+      canvas.drawPath(
+        tri,
+        Paint()
+          ..color = const Color(0xAA000000)
+          ..style = PaintingStyle.stroke,
+      );
       canvas.restore();
     }
-  }
-
-  void _paintRadar(Canvas canvas, EdgeInsetsLike safe) {
-    const r = 46.0;
-    final c = Offset(safe.left + 16 + r, safe.top + 16 + r);
-    canvas.drawCircle(c, r, Paint()..color = const Color(0x5510202F));
-    canvas.drawCircle(
-      c,
-      r,
-      Paint()
-        ..color = Palette.hudDim
-        ..style = PaintingStyle.stroke,
-    );
-    canvas.drawCircle(
-      c,
-      r / 2,
-      Paint()
-        ..color = const Color(0x33FFD27A)
-        ..style = PaintingStyle.stroke,
-    );
-    final p = sim.player;
-    final cy = math.cos(p.yaw);
-    final sy = math.sin(p.yaw);
-    for (final e in sim.pirates) {
-      if (!e.alive) continue;
-      final rel = e.pos - p.pos;
-      final rx = rel.x * cy - rel.z * sy;
-      final rz = rel.x * sy + rel.z * cy;
-      var v = Offset(rx, -rz) / 3200 * r;
-      if (v.distance > r - 3) v = v / v.distance * (r - 3);
-      final above = rel.y > 150;
-      final below = rel.y < -150;
-      final color = e.cls == PirateClass.ace ? Palette.aceTrim : Palette.danger;
-      canvas.drawCircle(c + v, 3.2, Paint()..color = color);
-      if (above || below) {
-        canvas.drawLine(
-          c + v,
-          c + v + Offset(0, above ? -6 : 6),
-          Paint()
-            ..color = color
-            ..strokeWidth = 1.4,
-        );
-      }
-    }
-    final me = Path()
-      ..moveTo(c.dx, c.dy - 6)
-      ..lineTo(c.dx - 4.5, c.dy + 5)
-      ..lineTo(c.dx + 4.5, c.dy + 5)
-      ..close();
-    canvas.drawPath(me, Paint()..color = Palette.ok);
-  }
-
-  void _paintHud(Canvas canvas, Size size, EdgeInsetsLike safe) {
-    final right = size.width - safe.right - 72;
-    final top = safe.top + 16;
-    paintHudPanel(
-      canvas,
-      Rect.fromLTRB(right - 160, top - 8, right + 10, top + 80),
-    );
-    paintLabel(
-      canvas,
-      tr('hud.hull'),
-      Offset(right - 150, top),
-      size: 11,
-      anchor: Offset.zero,
-    );
-    paintMeter(
-      canvas,
-      Rect.fromLTWH(right - 150, top + 15, 150, 9),
-      sim.health,
-      color: sim.health > 0.35 ? Palette.ok : Palette.danger,
-    );
-    paintLabel(
-      canvas,
-      sim.jammed ? tr('hud.jammed') : tr('hud.heat'),
-      Offset(right - 150, top + 30),
-      size: 11,
-      color: sim.jammed ? Palette.danger : Palette.hud,
-    );
-    paintMeter(
-      canvas,
-      Rect.fromLTWH(right - 150, top + 45, 150, 7),
-      sim.heat,
-      color: sim.jammed ? Palette.danger : const Color(0xFFFFA24D),
-    );
-    paintLabel(
-      canvas,
-      '${tr('hud.enemies')}: ${sim.remaining}',
-      Offset(right, top + 60),
-      size: 13,
-      anchor: const Offset(1, 0),
-    );
-    if (sim.lowWarning && !sim.playerDown) {
-      final blink = (sim.time * 3).floor().isEven;
-      if (blink) {
-        paintLabel(
-          canvas,
-          tr('hud.lowAltitude'),
-          Offset(size.width / 2, size.height * 0.22),
-          size: 18,
-          color: Palette.danger,
-          anchor: const Offset(0.5, 0.5),
-        );
-      }
-    }
-    paintLabel(
-      canvas,
-      '${tr('hud.altitude')} ${sim.player.pos.y.round()}',
-      Offset(safe.left + 16, safe.top + 16 + 46 * 2 + 8),
-      size: 11,
-    );
   }
 }
 

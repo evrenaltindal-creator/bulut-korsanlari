@@ -147,7 +147,8 @@ const _tr = <String, String>{
 
   'm8.title': 'Kaptan Kuzgun',
   'm8.brief':
-      'Kaptan Kuzgun bizzat havalandı ve dört akıncıyla Meltem\'e geliyor. '
+      'Kaptan Kuzgun bizzat havalandı ve dört akıncıyla Meltem\'e geliyor; '
+      'önce akıncılar gelir, kaptan arkadan. '
       'Kaptanı düşürürsen Kara Bora başsız kalır.',
   'm8.win':
       'Kuzgun\'un uçağı paramparça oldu; bir paraşüt sisin içinde kayboldu.',
@@ -215,6 +216,8 @@ const _tr = <String, String>{
   'hud.enemies': 'Düşman',
   'hud.lowAltitude': 'BULUT DENİZİ — YÜKSEL!',
   'hud.altitude': 'İrtifa',
+  'hud.speed': 'Hız',
+  'hud.heading': 'Pusula',
   'hud.targets': 'Hedef',
   'hud.needed': 'gereken',
   'hud.route': 'Rota',
@@ -368,9 +371,9 @@ const _en = <String, String>{
 
   'm8.title': 'Captain Raven',
   'm8.brief':
-      'Captain Raven has taken to the air in person, leading four raiders '
-      'towards Meltem. Bring the captain down and the Black Squall is '
-      'leaderless.',
+      'Captain Raven has taken to the air in person and is flying towards '
+      'Meltem with four raiders; the raiders come first and the captain '
+      'follows. Bring the captain down and the Black Squall is leaderless.',
   'm8.win': 'Raven\'s plane broke apart; a parachute vanished into the fog.',
   'm8.lose': 'Raven escaped again, angrier than ever.',
 
@@ -435,6 +438,8 @@ const _en = <String, String>{
   'hud.enemies': 'Enemies',
   'hud.lowAltitude': 'CLOUD SEA — PULL UP!',
   'hud.altitude': 'Alt',
+  'hud.speed': 'Speed',
+  'hud.heading': 'Compass',
   'hud.targets': 'Targets',
   'hud.needed': 'needed',
   'hud.route': 'Route',

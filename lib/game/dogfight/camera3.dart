@@ -35,6 +35,7 @@ class Camera3 {
     required double width,
     required double height,
     double rollFactor = 0.7,
+    double centerY = 0.46,
   }) {
     final (r, u, fw) = f.basis(rollFactor);
     return Camera3(
@@ -43,7 +44,7 @@ class Camera3 {
       up: u,
       fwd: fw,
       cx: width / 2,
-      cy: height * 0.46,
+      cy: height * centerY,
       focal: math.max(width, height) * 0.78,
       roll: f.roll * rollFactor,
       pitch: f.pitch,

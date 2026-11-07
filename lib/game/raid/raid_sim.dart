@@ -97,6 +97,10 @@ class RaidSim implements MissionSim {
   final PilotSkills skills;
   final math.Random rng;
 
+  /// Random numbers for looks only (smoke, sparks, debris), kept apart
+  /// from [rng] so changing an effect never changes how a mission plays.
+  final math.Random fx = math.Random(99);
+
   final V3 plane = V3(startU, 0, 70);
   double speed = 135;
   final List<RaidTarget> targets = [];
@@ -204,7 +208,7 @@ class RaidSim implements MissionSim {
       plane.z = math.max(-200, plane.z - dt * 90);
       plane.x += speed * dt * 0.8;
       bank += dt * 2;
-      if (rng.nextDouble() < 0.6) _smoke(plane.copy());
+      if (fx.nextDouble() < 0.6) _smoke(plane.copy());
     } else {
       final handling = 0.85 + 0.45 * skills.handling;
       final sx = c.stickX.clamp(-1.0, 1.0);
@@ -223,7 +227,7 @@ class RaidSim implements MissionSim {
     _moveFlak(dt);
     for (final t in targets) {
       t.hitFlash = math.max(0, t.hitFlash - dt * 4);
-      if (!t.alive && rng.nextDouble() < dt * 4) {
+      if (!t.alive && fx.nextDouble() < dt * 4) {
         _smoke(V3(t.u, t.v, 8));
       }
     }
@@ -313,11 +317,7 @@ class RaidSim implements MissionSim {
             ? EffectKind.spark
             : (overGround ? EffectKind.splash : EffectKind.spark),
         pos: at.copy(),
-        vel: V3(
-          (rng.nextDouble() - 0.5) * 40,
-          (rng.nextDouble() - 0.5) * 40,
-          40,
-        ),
+        vel: V3((fx.nextDouble() - 0.5) * 40, (fx.nextDouble() - 0.5) * 40, 40),
         life: 0.35,
         size0: hit ? 7 : 4,
         size1: hit ? 3 : 9,
@@ -414,9 +414,9 @@ class RaidSim implements MissionSim {
           kind: EffectKind.debris,
           pos: at.copy(),
           vel: V3(
-            (rng.nextDouble() - 0.5) * 160,
-            (rng.nextDouble() - 0.5) * 160,
-            60 + rng.nextDouble() * 80,
+            (fx.nextDouble() - 0.5) * 160,
+            (fx.nextDouble() - 0.5) * 160,
+            60 + fx.nextDouble() * 80,
           ),
           life: 0.9,
           size0: 4,

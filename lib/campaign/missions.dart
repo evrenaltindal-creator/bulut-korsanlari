@@ -115,7 +115,7 @@ const List<MissionDef> campaignMissions = [
     raid: RaidConfig(
       length: 3400,
       seed: 61,
-      quota: 0.6,
+      quota: 0.5,
       targets: {
         RaidTargetKind.skiff: 5,
         RaidTargetKind.crate: 6,
@@ -146,6 +146,7 @@ const List<MissionDef> campaignMissions = [
     chapter: 3,
     kind: MissionKind.dogfight,
     dogfight: DogfightConfig(
+      // The escort first; Captain Raven joins as they fall.
       enemies: [
         PirateClass.raider,
         PirateClass.raider,
@@ -153,6 +154,7 @@ const List<MissionDef> campaignMissions = [
         PirateClass.raider,
         PirateClass.ace,
       ],
+      maxActive: 3,
       seed: 81,
     ),
   ),

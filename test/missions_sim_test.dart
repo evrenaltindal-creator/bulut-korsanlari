@@ -100,6 +100,27 @@ void main() {
       },
     );
 
+    test('with a cap, reserves join only as others fall', () {
+      final s = DogfightSim(
+        config: const DogfightConfig(
+          enemies: [PirateClass.scout, PirateClass.scout, PirateClass.ace],
+          maxActive: 2,
+          seed: 4,
+        ),
+      );
+      expect(s.pirates, hasLength(2));
+      expect(s.remaining, 3);
+      run(s.update, 1, ControlState());
+      expect(s.pirates, hasLength(2), reason: 'nobody has fallen yet');
+      s.pirates.first.hp = 0;
+      run(s.update, 0.1, ControlState());
+      expect(
+        s.pirates.where((p) => p.alive).map((p) => p.cls),
+        contains(PirateClass.ace),
+      );
+      expect(s.reserves, isEmpty);
+    });
+
     test('better handling turns faster', () {
       DogfightSim with_(double h) => DogfightSim(
         config: const DogfightConfig(enemies: [], seed: 1),

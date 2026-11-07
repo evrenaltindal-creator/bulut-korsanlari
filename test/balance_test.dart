@@ -7,42 +7,83 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'autopilot.dart';
 
-MissionResult fly(MissionDef m, PilotSkills skills) => switch (m.kind) {
-  MissionKind.dogfight => flyDogfight(
-    DogfightSim(config: m.dogfight!, skills: skills),
-  ),
-  MissionKind.raid => flyRaid(RaidSim(config: m.raid!, skills: skills)),
-  MissionKind.bombing => flyBombing(
-    BombingSim(config: m.bombing!, skills: skills),
-  ),
-};
+/// Flies [m] with a different random seed, so a result does not hang on
+/// one lucky (or unlucky) sequence.
+MissionResult fly(MissionDef m, PilotSkills skills, int seed) =>
+    switch (m.kind) {
+      MissionKind.dogfight => flyDogfight(
+        DogfightSim(
+          config: DogfightConfig(
+            enemies: m.dogfight!.enemies,
+            maxActive: m.dogfight!.maxActive,
+            seed: seed,
+          ),
+          skills: skills,
+        ),
+      ),
+      MissionKind.raid => flyRaid(
+        RaidSim(
+          config: RaidConfig(
+            length: m.raid!.length,
+            targets: m.raid!.targets,
+            quota: m.raid!.quota,
+            turretRate: m.raid!.turretRate,
+            seed: seed,
+          ),
+          skills: skills,
+        ),
+      ),
+      MissionKind.bombing => flyBombing(
+        BombingSim(
+          config: BombingConfig(
+            targets: m.bombing!.targets,
+            bombs: m.bombing!.bombs,
+            length: m.bombing!.length,
+            wind: m.bombing!.wind,
+            airshipHp: m.bombing!.airshipHp,
+            seed: seed,
+          ),
+          skills: skills,
+        ),
+      ),
+    };
+
+int wins(MissionDef m, PilotSkills skills, {int runs = 10}) {
+  var n = 0;
+  for (var i = 1; i <= runs; i++) {
+    if (fly(m, skills, i * 7 + 3).outcome == MissionOutcome.success) n++;
+  }
+  return n;
+}
 
 void main() {
   // A plain autopilot with no evasive flying stands in for a player of
-  // middling skill. If it cannot win a mission, a person will struggle.
+  // middling skill. It must win each mission at least 3 times in 10;
+  // a person who dodges will do better.
   const seasoned = PilotSkills(gunnery: 0.6, handling: 0.6);
 
   for (final m in campaignMissions) {
     test('${m.id} (${m.kind.name}) can be won', () {
-      final r = fly(m, seasoned);
-      expect(r.outcome, MissionOutcome.success);
+      expect(wins(m, seasoned), greaterThanOrEqualTo(3));
     });
   }
 
   test('the first mission is gentle even for a rookie', () {
-    final r = fly(campaignMissions.first, const PilotSkills());
-    expect(r.outcome, MissionOutcome.success);
-    expect(r.healthLeft, greaterThan(0.6));
+    expect(
+      wins(campaignMissions.first, const PilotSkills()),
+      greaterThanOrEqualTo(8),
+    );
   });
 
-  test('aces are a real threat to a rookie', () {
-    final aceMissions = campaignMissions.where(
-      (m) => m.dogfight?.enemies.contains(PirateClass.ace) ?? false,
+  test('the final dogfight is a real test for a rookie', () {
+    final last = campaignMissions.lastWhere(
+      (m) => m.kind == MissionKind.dogfight,
     );
-    expect(aceMissions, isNotEmpty);
-    final hp = [
-      for (final m in aceMissions) fly(m, const PilotSkills()).healthLeft,
-    ];
-    expect(hp.reduce((a, b) => a < b ? a : b), lessThan(0.5));
+    expect(
+      last.dogfight!.enemies.last,
+      PirateClass.ace,
+      reason: 'the captain arrives last',
+    );
+    expect(wins(last, const PilotSkills()), lessThanOrEqualTo(5));
   });
 }

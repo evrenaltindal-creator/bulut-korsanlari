@@ -8,10 +8,16 @@ import '../mission_result.dart';
 enum PirateClass { scout, raider, ace }
 
 class DogfightConfig {
-  const DogfightConfig({required this.enemies, this.seed = 1});
+  const DogfightConfig({required this.enemies, this.seed = 1, this.maxActive});
 
+  /// In arrival order: with [maxActive], the ones at the end wait their
+  /// turn (put the leader last to have it arrive after its escort).
   final List<PirateClass> enemies;
   final int seed;
+
+  /// At most this many in the air at once; the rest come in as others
+  /// fall. Null: everyone at the start.
+  final int? maxActive;
 }
 
 /// Anything that flies: position plus yaw / pitch / roll and speed.
@@ -151,6 +157,10 @@ class DogfightSim implements MissionSim {
   final PilotSkills skills;
   final math.Random rng;
 
+  /// Random numbers for looks only (smoke, sparks, debris), kept apart
+  /// from [rng] so changing an effect never changes how a mission plays.
+  final math.Random fx = math.Random(99);
+
   final Flyer player = Flyer(pos: V3(0, 1100, 0), speed: 250);
   final List<Pirate> pirates = [];
   final List<Bullet> bullets = [];
@@ -179,12 +189,39 @@ class DogfightSim implements MissionSim {
   double get time => _time;
 
   bool get playerDown => _health <= 0;
-  int get remaining => pirates.where((p) => p.alive).length;
+
+  /// Alive in the air plus those still to come.
+  int get remaining => pirates.where((p) => p.alive).length + reserves.length;
+
+  /// Brings in the next reserve from a random direction ahead.
+  void _reinforce() {
+    final cap = config.maxActive;
+    if (cap == null || reserves.isEmpty) return;
+    if (pirates.where((p) => p.alive).length >= cap) return;
+    final cls = reserves.removeAt(0);
+    final yaw = player.yaw + (rng.nextDouble() - 0.5) * 1.6;
+    final pos =
+        player.pos + V3.fromAngles(yaw, 0) * (1700 + rng.nextDouble() * 500);
+    pos.y = (pos.y + (rng.nextDouble() - 0.3) * 400).clamp(
+      floorY + 300,
+      ceilY - 300,
+    );
+    pirates.add(
+      Pirate(cls: cls, pos: pos, yaw: wrapAngle(yaw + math.pi))
+        ..fireCooldown = 2.5,
+    );
+  }
+
+  /// Pirates still waiting to join the fight.
+  final List<PirateClass> reserves = [];
 
   void _spawn() {
-    for (var i = 0; i < config.enemies.length; i++) {
-      final cls = config.enemies[i];
-      final spreadYaw = (i - (config.enemies.length - 1) / 2) * 0.35;
+    final first = config.maxActive ?? config.enemies.length;
+    final opening = config.enemies.take(first).toList();
+    reserves.addAll(config.enemies.skip(first));
+    for (var i = 0; i < opening.length; i++) {
+      final cls = opening[i];
+      final spreadYaw = (i - (opening.length - 1) / 2) * 0.35;
       final yaw = spreadYaw + (rng.nextDouble() - 0.5) * 0.2;
       final dist =
           1500 + rng.nextDouble() * 700 + (cls == PirateClass.ace ? 400 : 0);
@@ -214,6 +251,7 @@ class DogfightSim implements MissionSim {
       _updatePirate(p, dt);
     }
     _moveBullets(dt);
+    if (!playerDown) _reinforce();
     effects.update(dt, drag: 0.8, rise: 18);
     pirates.removeWhere((p) => p.gone);
 
@@ -249,7 +287,7 @@ class DogfightSim implements MissionSim {
       p.pitch = math.max(-1.1, p.pitch - dt * 0.8);
       p.yaw += dt * 0.6;
       p.pos.addScaled(p.forward, p.speed * dt);
-      if (rng.nextDouble() < 0.6) _smoke(p.pos + p.forward * -20, 1.4);
+      if (fx.nextDouble() < 0.6) _smoke(p.pos + p.forward * -20, 1.4);
       return;
     }
     final handling = 0.85 + 0.45 * skills.handling;
@@ -320,8 +358,8 @@ class DogfightSim implements MissionSim {
       e.roll += dt * 4;
       e.pitch = math.max(-1.2, e.pitch - dt * 0.9);
       e.pos.addScaled(e.forward, e.speed * dt);
-      if (rng.nextDouble() < 0.7) _smoke(e.pos.copy(), 1.6);
-      if (rng.nextDouble() < 0.25) _fire(e.pos.copy(), 0.4, 14);
+      if (fx.nextDouble() < 0.7) _smoke(e.pos.copy(), 1.6);
+      if (fx.nextDouble() < 0.25) _fire(e.pos.copy(), 0.4, 14);
       return;
     }
 
@@ -460,7 +498,7 @@ class DogfightSim implements MissionSim {
       Effect(
         kind: EffectKind.spark,
         pos: e.pos.copy(),
-        vel: randomUnit(rng) * 60,
+        vel: randomUnit(fx) * 60,
         life: 0.25,
         size0: 6,
         size1: 2,
@@ -469,13 +507,24 @@ class DogfightSim implements MissionSim {
     if (e.hp <= 0) {
       kills++;
       e.fallTime = 0;
+      // A fireball of several puffs, then smoke and flying pieces.
       _fire(e.pos.copy(), 0.9, 34);
-      for (var i = 0; i < 8; i++) {
+      for (var i = 0; i < 4; i++) {
+        _fire(
+          e.pos + randomUnit(fx) * 14,
+          0.6 + fx.nextDouble() * 0.5,
+          18 + fx.nextDouble() * 14,
+        );
+      }
+      for (var i = 0; i < 3; i++) {
+        _smoke(e.pos + randomUnit(fx) * 10, 1.8 + fx.nextDouble());
+      }
+      for (var i = 0; i < 12; i++) {
         effects.add(
           Effect(
             kind: EffectKind.debris,
             pos: e.pos.copy(),
-            vel: randomUnit(rng) * (80 + rng.nextDouble() * 120),
+            vel: randomUnit(fx) * (80 + fx.nextDouble() * 120),
             life: 1.2,
             size0: 3,
             size1: 2,
@@ -492,7 +541,7 @@ class DogfightSim implements MissionSim {
       Effect(
         kind: EffectKind.smoke,
         pos: at,
-        vel: randomUnit(rng) * 8,
+        vel: randomUnit(fx) * 8,
         life: life,
         size0: 6,
         size1: 22,
@@ -505,7 +554,7 @@ class DogfightSim implements MissionSim {
       Effect(
         kind: EffectKind.fire,
         pos: at,
-        vel: randomUnit(rng) * 20,
+        vel: randomUnit(fx) * 20,
         life: life,
         size0: size * 0.4,
         size1: size,
