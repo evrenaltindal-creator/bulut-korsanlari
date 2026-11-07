@@ -7,6 +7,7 @@ import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show KeyEventResult;
 
+import '../audio/sfx.dart';
 import '../core/controls.dart';
 import 'bombing/bombing_painter.dart';
 import 'bombing/bombing_sim.dart';
@@ -26,9 +27,13 @@ abstract class MissionGame extends FlameGame with KeyboardEvents {
     required this.onFinished,
     this.invertY = false,
     this.safe = const EdgeInsetsLike(),
+    this.sfx,
   });
 
   final Tr tr;
+
+  /// Sound effects; null keeps the mission silent (tests).
+  final SfxDirector? sfx;
   final void Function(MissionResult result) onFinished;
   bool invertY;
   EdgeInsetsLike safe;
@@ -45,6 +50,12 @@ abstract class MissionGame extends FlameGame with KeyboardEvents {
 
   /// True when the action button drops bombs rather than firing guns.
   bool get actionIsDrop => false;
+
+  /// Whether the guns are rattling this frame.
+  bool get gunsFiring => false;
+
+  /// Engine pitch: 1 at cruising speed.
+  double get engineRate => 1;
 
   void step(double dt, ControlState c);
   void paintScene(Canvas canvas, Size size);
@@ -90,10 +101,42 @@ abstract class MissionGame extends FlameGame with KeyboardEvents {
       controls.drop = false;
       remaining -= h;
     }
+    _sound(dt);
     final r = sim.result;
     if (r != null && !_reported) {
       _reported = true;
       onFinished(r);
+    }
+  }
+
+  void _sound(double dt) {
+    final s = sfx;
+    if (s != null) {
+      s.tick(dt);
+      for (final e in sim.events) {
+        s.event(e);
+      }
+      final flying = sim.result == null && sim.health > 0;
+      s.guns(on: flying && gunsFiring);
+      s.engine(on: sim.result == null, rate: engineRate);
+    }
+    sim.events.clear();
+  }
+
+  @override
+  void onRemove() {
+    sfx?.stopLoops();
+    super.onRemove();
+  }
+
+  /// Pause menu: freezes the game and its sound together.
+  void setPaused(bool paused) {
+    if (paused) {
+      pauseEngine();
+      sfx?.pause();
+    } else {
+      resumeEngine();
+      sfx?.resume();
     }
   }
 
@@ -169,6 +212,7 @@ class DogfightGame extends MissionGame {
     required super.onFinished,
     super.invertY,
     super.safe,
+    super.sfx,
   }) : sim = DogfightSim(config: config, skills: skills) {
     painter = DogfightPainter(sim, tr);
   }
@@ -179,6 +223,12 @@ class DogfightGame extends MissionGame {
 
   @override
   String get actionLabel => tr('control.fire');
+
+  @override
+  bool get gunsFiring => controls.fire && !sim.jammed && !sim.playerDown;
+
+  @override
+  double get engineRate => (sim.player.speed / 250).clamp(0.8, 1.3);
 
   @override
   void step(double dt, ControlState c) => sim.update(dt, c);
@@ -196,6 +246,7 @@ class RaidGame extends MissionGame {
     required super.onFinished,
     super.invertY,
     super.safe,
+    super.sfx,
   }) : sim = RaidSim(config: config, skills: skills) {
     painter = RaidPainter(sim, tr);
   }
@@ -206,6 +257,9 @@ class RaidGame extends MissionGame {
 
   @override
   String get actionLabel => tr('control.fire');
+
+  @override
+  bool get gunsFiring => controls.fire && !sim.planeDown;
 
   @override
   void step(double dt, ControlState c) => sim.update(dt, c);
@@ -223,6 +277,7 @@ class BombingGame extends MissionGame {
     required super.onFinished,
     super.invertY,
     super.safe,
+    super.sfx,
   }) : sim = BombingSim(config: config, skills: skills) {
     painter = BombingPainter(sim, tr);
   }
@@ -236,6 +291,9 @@ class BombingGame extends MissionGame {
 
   @override
   bool get actionIsDrop => true;
+
+  @override
+  double get engineRate => (sim.speed / 150).clamp(0.85, 1.2);
 
   @override
   void step(double dt, ControlState c) => sim.update(dt, c);

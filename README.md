@@ -83,11 +83,20 @@ tarayıcıda çalar; sabit bit hızı süreyi kesin kılar). Süreler
 `MusicTrack` içinde yazılıdır ve test dosya boyutuyla karşılaştırır.
 Parça değiştirirsen künyeyi ve süreyi de güncelle.
 
+## Ses efektleri
+
+Makineli tüfek, motor, isabet, hasar, patlama, uçaksavar, bomba ıslığı,
+tutukluk ve alçak irtifa uyarısı `tool/generate_sfx.py` ile kodla
+sentezlenir (kayıt ya da lisans yok; `assets/audio/sfx/`). Simülasyonlar
+olay bildirir (`SimEvent`), `SfxDirector` bunları sese çevirir; motor
+perdesi hıza göre değişir, tüfek ateş tuşu basılıyken döner. Ayarlar'da
+müzikten ayrı bir efekt sesi var.
+
 ## Bilinen eksikler
 
-- Ses efektleri yok (müzik var).
-- Müzik gerçek telefonda denenmedi; tarayıcıda (Chromium) çaldığı ve
-  geçişlerin çalıştığı doğrulandı.
+- Müzik ve efektler gerçek telefonda denenmedi; tarayıcıda (Chromium)
+  çaldıkları doğrulandı.
 - Gerçek telefonlarda denenmedi; tarayıcıda (Chromium) ve testlerde denendi.
-- Uygulama simgesi Flutter'ın varsayılanı; paket kimliği
+- Uygulama simgesi henüz Flutter'ın varsayılanı; kaynak görsel gelince
+  `tool/generate_app_icon.py` bütün boyutları üretir. Paket kimliği
   `com.bulutkorsanlari.bulut_korsanlari` yer tutucudur.

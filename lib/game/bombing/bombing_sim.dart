@@ -128,6 +128,8 @@ class BombingSim implements MissionSim {
   final List<Bomb> bombs = [];
   final List<FlakBurst> pendingFlak = [];
   final EffectList effects = EffectList();
+  @override
+  final List<SimEvent> events = [];
 
   /// Outline of the floating rock as (y, halfWidth) samples.
   final List<(double, double)> outline = [];
@@ -297,6 +299,7 @@ class BombingSim implements MissionSim {
     v.x += (rng.nextDouble() - 0.5) * 2 * speed * jitter;
     v.y += (rng.nextDouble() - 0.5) * 2 * speed * jitter;
     bombs.add(Bomb(plane.copy(), v, fallTime));
+    events.add(SimEvent.bombDrop);
   }
 
   void _updateBombs(double dt) {
@@ -323,6 +326,7 @@ class BombingSim implements MissionSim {
       _damage(t, d == 0 ? 3 : (d < blastRadius * 0.5 ? 2 : 1));
     }
     if (hitAny) bombsHit++;
+    events.add(SimEvent.blast);
     effects.add(
       Effect(
         kind: onRock || hitAny ? EffectKind.fire : EffectKind.splash,
@@ -375,6 +379,7 @@ class BombingSim implements MissionSim {
     for (final f in pendingFlak) {
       f.delay -= dt;
       if (f.delay <= 0) {
+        events.add(SimEvent.flak);
         effects.add(
           Effect(
             kind: EffectKind.flak,
@@ -387,7 +392,11 @@ class BombingSim implements MissionSim {
         if (!planeDown && (f.at - plane).length < 34) {
           _health -= 0.09;
           hitFlash = 1;
-          if (_health <= 0) _health = 0;
+          events.add(SimEvent.playerHit);
+          if (_health <= 0) {
+            _health = 0;
+            events.add(SimEvent.down);
+          }
         }
       }
     }

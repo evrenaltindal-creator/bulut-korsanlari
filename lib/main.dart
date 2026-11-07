@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'audio/audioplayers_backend.dart';
+import 'audio/audioplayers_sfx.dart';
 import 'campaign/store.dart';
 import 'ui/music_cue.dart';
 import 'ui/scope.dart';
@@ -20,7 +21,10 @@ Future<void> main() async {
   final store = await GameStore.load(
     deviceLang: PlatformDispatcher.instance.locale.languageCode,
     backend: AudioplayersBackend(),
+    sfxBackend: AudioplayersSfxBackend(),
   );
+  // Load the effects in the background; the menus need none of them.
+  store.sfx.preload();
   runApp(CloudCorsairsApp(store: store));
 }
 
@@ -41,8 +45,14 @@ class _CloudCorsairsAppState extends State<CloudCorsairsApp> {
     super.initState();
     // Music stops when the game leaves the screen and comes back with it.
     _lifecycle = AppLifecycleListener(
-      onHide: widget.store.music.pause,
-      onShow: widget.store.music.resume,
+      onHide: () {
+        widget.store.music.pause();
+        widget.store.sfx.pause();
+      },
+      onShow: () {
+        widget.store.music.resume();
+        widget.store.sfx.resume();
+      },
     );
   }
 

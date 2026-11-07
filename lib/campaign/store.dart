@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../audio/music.dart';
+import '../audio/sfx.dart';
 import '../game/mission_result.dart';
 import '../l10n/strings.dart';
 import 'campaign.dart';
@@ -19,6 +20,8 @@ class GameStore extends ChangeNotifier {
     required this.invertY,
     required this.music,
     required this.musicVolume,
+    required this.sfx,
+    required this.sfxVolume,
     this.campaign,
   });
 
@@ -26,6 +29,8 @@ class GameStore extends ChangeNotifier {
   static const _langKey = 'lang';
   static const _invertKey = 'invert_y';
   static const _musicKey = 'music_volume';
+  static const _sfxKey = 'sfx_volume';
+  static const defaultSfxVolume = 0.8;
   static const defaultMusicVolume = 0.7;
 
   /// [backend] plays the music; without one the game stays silent.
@@ -33,6 +38,7 @@ class GameStore extends ChangeNotifier {
   static Future<GameStore> load({
     String? deviceLang,
     MusicBackend? backend,
+    SfxBackend? sfxBackend,
     bool autoTick = true,
   }) async {
     final prefs = await SharedPreferences.getInstance();
@@ -52,6 +58,7 @@ class GameStore extends ChangeNotifier {
       }
     }
     final volume = prefs.getDouble(_musicKey) ?? defaultMusicVolume;
+    final sfxVolume = prefs.getDouble(_sfxKey) ?? defaultSfxVolume;
     return GameStore._(
       prefs,
       lang: prefs.getString(_langKey) ?? fallback,
@@ -62,6 +69,8 @@ class GameStore extends ChangeNotifier {
         autoTick: backend != null && autoTick,
       ),
       musicVolume: volume,
+      sfx: SfxDirector(sfxBackend ?? SilentSfxBackend(), volume: sfxVolume),
+      sfxVolume: sfxVolume,
       campaign: campaign,
     );
   }
@@ -75,6 +84,10 @@ class GameStore extends ChangeNotifier {
 
   /// 0 (off) .. 1.
   double musicVolume;
+  final SfxDirector sfx;
+
+  /// 0 (off) .. 1.
+  double sfxVolume;
   Campaign? campaign;
 
   AppStrings get strings => AppStrings(lang);
@@ -98,6 +111,13 @@ class GameStore extends ChangeNotifier {
     music.volume = musicVolume;
     notifyListeners();
     await _prefs.setDouble(_musicKey, musicVolume);
+  }
+
+  Future<void> setSfxVolume(double value) async {
+    sfxVolume = value.clamp(0.0, 1.0);
+    sfx.volume = sfxVolume;
+    notifyListeners();
+    await _prefs.setDouble(_sfxKey, sfxVolume);
   }
 
   Future<void> startCampaign(String pilotName) async {

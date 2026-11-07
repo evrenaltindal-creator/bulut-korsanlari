@@ -165,6 +165,8 @@ class DogfightSim implements MissionSim {
   final List<Pirate> pirates = [];
   final List<Bullet> bullets = [];
   final EffectList effects = EffectList();
+  @override
+  final List<SimEvent> events = [];
 
   double _health = 1;
   double heat = 0;
@@ -298,10 +300,12 @@ class DogfightSim implements MissionSim {
     p.pitch += py * 0.95 * handling * dt;
     if (py.abs() < 0.05) p.pitch -= p.pitch * math.min(1, dt * 0.35);
 
+    final wasLow = lowWarning;
     lowWarning = false;
     final aboveFloor = p.pos.y - floorY;
     if (aboveFloor < 220) {
       lowWarning = true;
+      if (!wasLow) events.add(SimEvent.warning);
       if (p.pitch < 0.25) {
         p.pitch += dt * 1.4 * (1 - aboveFloor / 220).clamp(0.0, 1.0);
       }
@@ -328,6 +332,7 @@ class DogfightSim implements MissionSim {
     if (heat >= 1) {
       heat = 1;
       jammed = true;
+      events.add(SimEvent.jam);
     }
     final (right, up, fwd) = player.basis();
     final spread = lerpDouble(0.03, 0.007, skills.gunnery);
@@ -473,8 +478,10 @@ class DogfightSim implements MissionSim {
     if (playerDown) return;
     _health -= amount;
     playerHitFlash = 1;
+    events.add(SimEvent.playerHit);
     if (_health <= 0) {
       _health = 0;
+      events.add(SimEvent.down);
       _fire(player.pos + player.forward * 30, 1.0, 40);
     }
   }
@@ -494,6 +501,7 @@ class DogfightSim implements MissionSim {
   void _hitPirate(Pirate e) {
     e.hp--;
     e.hitFlash = 1;
+    events.add(e.hp <= 0 ? SimEvent.kill : SimEvent.hit);
     effects.add(
       Effect(
         kind: EffectKind.spark,

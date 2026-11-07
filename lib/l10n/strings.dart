@@ -201,6 +201,7 @@ const _tr = <String, String>{
   'settings.title': 'Ayarlar',
   'settings.language': 'Dil',
   'settings.music': 'Müzik sesi',
+  'settings.sfx': 'Efekt sesi',
   'settings.invert': 'Ters dikey kontrol',
   'settings.invertHint': 'Açıkken çubuğu yukarı itmek burnu aşağı indirir.',
 
@@ -437,6 +438,7 @@ const _en = <String, String>{
   'settings.title': 'Settings',
   'settings.language': 'Language',
   'settings.music': 'Music volume',
+  'settings.sfx': 'Sound effects',
   'settings.invert': 'Invert vertical control',
   'settings.invertHint': 'When on, pushing the stick up dives.',
 

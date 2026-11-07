@@ -45,8 +45,41 @@ class PilotSkills {
   final double handling;
 }
 
+/// Something that happened in a mission and can be heard.
+enum SimEvent {
+  /// A shot struck a plane or a target.
+  hit,
+
+  /// A pirate plane went down.
+  kill,
+
+  /// A bomb or a destroyed target exploded.
+  blast,
+
+  /// The player's plane was hit.
+  playerHit,
+
+  /// Anti-aircraft fire burst nearby.
+  flak,
+
+  /// A bomb left the rack.
+  bombDrop,
+
+  /// The guns overheated and jammed.
+  jam,
+
+  /// The player's plane was shot down.
+  down,
+
+  /// A warning came on (flying too low).
+  warning,
+}
+
 /// Common shape of the three mission simulations.
 abstract class MissionSim {
+  /// Events since the game last emptied this list.
+  List<SimEvent> get events;
+
   /// 0..1
   double get health;
 

@@ -107,6 +107,8 @@ class RaidSim implements MissionSim {
   final List<RaidShot> shots = [];
   final List<Flak> flak = [];
   final EffectList effects = EffectList();
+  @override
+  final List<SimEvent> events = [];
 
   /// Decorative props (trees, huts) as (u, v, kind).
   final List<(double, double, int)> props = [];
@@ -309,7 +311,10 @@ class RaidSim implements MissionSim {
         break;
       }
     }
-    if (hit) shotsHit++;
+    if (hit) {
+      shotsHit++;
+      events.add(SimEvent.hit);
+    }
     final overGround = halfWidth(at.x) > at.y.abs();
     effects.add(
       Effect(
@@ -331,6 +336,7 @@ class RaidSim implements MissionSim {
     t.hitFlash = 1;
     if (t.hp > 0) return;
     t.hp = 0;
+    events.add(SimEvent.blast);
     _explode(V3(t.u, t.v, 6), t.kind == RaidTargetKind.fuel ? 46 : 28);
     if (t.kind == RaidTargetKind.fuel) {
       // Burning fuel catches whatever is close.
@@ -367,6 +373,7 @@ class RaidSim implements MissionSim {
       f.age += dt;
       if (!f.burst && f.age >= f.flightTime) {
         f.burst = true;
+        events.add(SimEvent.flak);
         effects.add(
           Effect(
             kind: EffectKind.flak,
@@ -379,8 +386,10 @@ class RaidSim implements MissionSim {
         if (!planeDown && (f.at - plane).length < 40) {
           _health -= 0.1;
           hitFlash = 1;
+          events.add(SimEvent.playerHit);
           if (_health <= 0) {
             _health = 0;
+            events.add(SimEvent.down);
             _explode(plane.copy(), 30);
           }
         }

@@ -23,6 +23,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/audio/music/
+    - assets/audio/sfx/
     - assets/images/chapters/
     - assets/images/missions/
     - assets/images/portraits/

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'music_cue.dart';
 
+import '../audio/sfx.dart';
 import '../campaign/missions.dart';
 import '../game/mission_game.dart';
 import '../game/mission_result.dart';
@@ -18,6 +19,7 @@ MissionGame createMissionGame(
   required void Function(MissionResult) onFinished,
   bool invertY = false,
   EdgeInsetsLike safe = const EdgeInsetsLike(),
+  SfxDirector? sfx,
 }) => switch (mission.kind) {
   MissionKind.dogfight => DogfightGame(
     config: mission.dogfight!,
@@ -26,6 +28,7 @@ MissionGame createMissionGame(
     onFinished: onFinished,
     invertY: invertY,
     safe: safe,
+    sfx: sfx,
   ),
   MissionKind.raid => RaidGame(
     config: mission.raid!,
@@ -34,6 +37,7 @@ MissionGame createMissionGame(
     onFinished: onFinished,
     invertY: invertY,
     safe: safe,
+    sfx: sfx,
   ),
   MissionKind.bombing => BombingGame(
     config: mission.bombing!,
@@ -42,6 +46,7 @@ MissionGame createMissionGame(
     onFinished: onFinished,
     invertY: invertY,
     safe: safe,
+    sfx: sfx,
   ),
 };
 
@@ -79,6 +84,7 @@ class _MissionScreenState extends State<MissionScreen> {
         onFinished: _finish,
         invertY: store.invertY,
         safe: safe,
+        sfx: store.sfx,
       );
     } else {
       game.safe = safe;
@@ -104,7 +110,7 @@ class _MissionScreenState extends State<MissionScreen> {
   void _setPaused(bool value) {
     final game = _game!;
     setState(() => _paused = value);
-    value ? game.pauseEngine() : game.resumeEngine();
+    game.setPaused(value);
     StoreScope.read(context).music.duck(value);
   }
 
@@ -136,7 +142,7 @@ class _MissionScreenState extends State<MissionScreen> {
                   onResume: () => _setPaused(false),
                   onAbandon: () {
                     _setPaused(false);
-                    game.pauseEngine();
+                    game.setPaused(true);
                     _finish(game.abandonResult());
                   },
                 ),

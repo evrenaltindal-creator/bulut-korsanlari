@@ -218,6 +218,28 @@ class TitleScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                Text(
+                  ctx.tr('settings.sfx'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Row(
+                  children: [
+                    Icon(
+                      store.sfxVolume == 0 ? Icons.volume_off : Icons.volume_up,
+                      color: Colors.white70,
+                    ),
+                    Expanded(
+                      child: Slider(
+                        value: store.sfxVolume,
+                        divisions: 10,
+                        label: '${(store.sfxVolume * 100).round()}%',
+                        semanticFormatterCallback: (v) =>
+                            '${(v * 100).round()}%',
+                        onChanged: store.setSfxVolume,
+                      ),
+                    ),
+                  ],
+                ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: store.invertY,
