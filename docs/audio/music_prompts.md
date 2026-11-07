@@ -2,8 +2,8 @@
 
 Bulut Korsanları için 9 parça: 6 döngü (ekranda sürekli çalar) ve 3 kısa
 nida (görev sonu, epilog). Promptlar İngilizce, çünkü müzik üreticileri
-(Suno, Udio vb.) İngilizceyi daha iyi anlar. Hepsinde **Instrumental**
-seçili olmalı.
+(Gemini, Suno, Udio vb.) İngilizceyi daha iyi anlar. Hepsi sözsüz
+(enstrümantal) olmalı.
 
 **Ortak ses kimliği:** orkestral macera + Anadolu çalgıları (bağlama,
 darbuka, davul, ney, zurna) + akordeon. Bütün parçalarda aynı çalgı
@@ -90,9 +90,16 @@ Joyful celebration finale, festival on a floating island town, festive davul and
 ## Üretirken
 
 - Her prompt için 2–4 deneme üret, en iyisini seç.
-- **Lisans:** Kullandığın aracın ticari kullanıma izin veren planında
-  üret (ör. Suno'nun ücretsiz planı ticari kullanım vermez). Hangi araç,
-  hangi plan ve hangi tarihte üretildiği `assets/audio/MUSIC_SOURCE.txt`
-  dosyasına yazılacak.
+- **Araç: Gemini uygulamasındaki müzik üretimi (Lyria).** Her prompta
+  "no vocals" ekle ve şarkı sözü yerine enstrümantal seç. Ücretsiz planda
+  parçalar 30 saniyeyle sınırlı olabilir; döngüler için 1–3 dakikalık
+  parça veren bir plan daha iyi sonuç verir.
+- **Hak durumu:** Google Hizmet Şartları (30 Temmuz 2026): "Google won't
+  claim ownership over that content." Aynı şartlar yapay zekâ içeriğini
+  insan yapımı gibi göstermeyi yasaklar; bu yüzden künyede müziğin
+  Gemini ile üretildiği yazılır. Parçalarda duyulmayan SynthID filigranı
+  vardır.
+- Hangi araç, hangi plan ve hangi tarihte üretildiği
+  `assets/audio/MUSIC_SOURCE.txt` dosyasına yazılacak.
 - WAV ya da yüksek kaliteli MP3 olarak indir. Döngü noktası, ses seviyesi
   eşitleme ve oyuna uygun biçime çevirme (OGG/M4A) oyuna eklenirken yapılır.
