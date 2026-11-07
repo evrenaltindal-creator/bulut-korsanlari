@@ -129,3 +129,13 @@ Head-and-shoulders portrait of the sky pirates' best fighter pilot: a woman in h
 ```
 Head-and-shoulders portrait of the leader of a band of sky pirates: a man in his fifties with a hooked nose, piercing grey eyes and a black beard streaked with silver, wearing a long black coat with a collar of raven feathers, a battered aviator cap with a single raven feather and a brass spyglass hanging on a chain. Cold storm light with a red glow from below; blurred background of storm clouds. Painterly storybook illustration with gouache and ink texture, palette of teal, brass, sunset peach and deep blue, rich detail. No text, no letters, no logos, no watermark, no real-world flags or military insignia.
 ```
+
+## Uygulama simgesi (1:1)
+
+Seçilen fikir "A · Pusula ve uçak". Üretilen görsel 16:9 geldi; simge
+ortasına yuvarlak köşeli bir kare olarak çizilmişti. O kare kesilip
+`assets/branding/app_icon_source.png` yapıldı (bkz. README, Simge).
+
+```
+App icon, square 1:1: a teal biplane with brass trim flying diagonally across a large golden compass rose, on a deep blue background with a warm sunset glow behind the compass. Bold, simple composition with one clear subject in the centre, occupying the middle 70 percent of the canvas, readable at very small sizes. Full-bleed background that reaches all four edges, no transparency, no rounded corners, no border. Painterly storybook illustration with gouache texture, palette of teal, brass, sunset peach and deep blue. No text, no letters, no logos, no watermark.
+```

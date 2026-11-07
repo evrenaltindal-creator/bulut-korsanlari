@@ -92,11 +92,25 @@ olay bildirir (`SimEvent`), `SfxDirector` bunları sese çevirir; motor
 perdesi hıza göre değişir, tüfek ateş tuşu basılıyken döner. Ayarlar'da
 müzikten ayrı bir efekt sesi var.
 
+## Simge
+
+Kaynak: `assets/branding/app_icon_source.png` (1024×1024, kenara kadar dolu,
+saydamlıksız). Nano Banana Pro ile üretilen görselin çizilmiş yuvarlak
+karesinden kesildi, köşe dışı iç kenar rengiyle dolduruldu. Bütün
+boyutlar şununla üretilir; üretilen dosyaları elle düzenleme:
+
+```bash
+python3 tool/generate_app_icon.py assets/branding/app_icon_source.png
+```
+
+`--preview <dosya>` simgeyi telefonların gösterdiği gibi (yuvarlak kare,
+daire, küçük boyutlar) çizer. Android uyarlanabilir simgede ve web'in
+maskelenebilir simgesinde resim küçültülüp kendi kenar rengiyle çevrelenir;
+yoksa daire kanat uçlarını ve pusula harflerini keserdi.
+
 ## Bilinen eksikler
 
 - Müzik ve efektler gerçek telefonda denenmedi; tarayıcıda (Chromium)
   çaldıkları doğrulandı.
 - Gerçek telefonlarda denenmedi; tarayıcıda (Chromium) ve testlerde denendi.
-- Uygulama simgesi henüz Flutter'ın varsayılanı; kaynak görsel gelince
-  `tool/generate_app_icon.py` bütün boyutları üretir. Paket kimliği
-  `com.bulutkorsanlari.bulut_korsanlari` yer tutucudur.
+- Paket kimliği `com.bulutkorsanlari.bulut_korsanlari` yer tutucudur.

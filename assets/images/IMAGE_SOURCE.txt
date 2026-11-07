@@ -28,3 +28,7 @@ portraits/kuzgun.jpg        8. ve 9. görevlerin brifingi (hedef)
 
 Oyun içi çizimler (uçaklar, adalar, kokpit) görsel dosyası değildir;
 kodla çizilir (lib/game/).
+
+Uygulama simgesi (assets/branding/app_icon_source.png) da aynı araçla
+üretildi (7 Kasım 2026, "Pusula ve uçak" promptu, docs/art/image_prompts.md
+sonunda); tool/generate_app_icon.py bütün boyutları üretir.

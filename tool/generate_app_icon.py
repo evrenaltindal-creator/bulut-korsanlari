@@ -25,7 +25,7 @@ import json
 import pathlib
 import sys
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageStat
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 IOS = ROOT / "ios/Runner/Assets.xcassets/AppIcon.appiconset"
@@ -33,6 +33,13 @@ ANDROID = ROOT / "android/app/src/main/res"
 WEB = ROOT / "web"
 
 DENSITIES = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
+
+# Share of an Android adaptive layer the picture fills. Launchers show
+# only the middle 72 of its 108 dp, so a full-size picture loses its
+# edges; at this size the circle keeps nearly all of it.
+ADAPTIVE_INSET = 0.68
+# Web maskable icons promise only a centre circle of 80 percent.
+MASKABLE_INSET = 0.84
 
 ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
@@ -65,6 +72,24 @@ def sized(img: Image.Image, px: int) -> Image.Image:
     return img.resize((px, px), Image.LANCZOS)
 
 
+def edge_colour(img: Image.Image) -> tuple:
+    """Average colour of the outermost two percent, to pad with."""
+    w = img.size[0]
+    band = max(2, w // 50)
+    mask = Image.new("L", img.size, 255)
+    ImageDraw.Draw(mask).rectangle((band, band, w - band - 1, w - band - 1), fill=0)
+    return tuple(round(c) for c in ImageStat.Stat(img, mask).mean[:3])
+
+
+def inset(img: Image.Image, px: int, share: float) -> Image.Image:
+    """The picture at [share] of a [px] square, padded with its edge colour."""
+    canvas = Image.new("RGB", (px, px), edge_colour(img))
+    inner = round(px * share)
+    off = (px - inner) // 2
+    canvas.paste(sized(img, inner), (off, off))
+    return canvas
+
+
 def ios(img: Image.Image) -> int:
     contents = json.loads((IOS / "Contents.json").read_text())
     n = 0
@@ -84,7 +109,7 @@ def android(img: Image.Image) -> int:
         folder.mkdir(exist_ok=True)
         sized(img, round(48 * k)).save(folder / "ic_launcher.png", optimize=True)
         layer = round(108 * k)
-        sized(img, layer).save(folder / "ic_launcher_background.png", optimize=True)
+        inset(img, layer, ADAPTIVE_INSET).save(folder / "ic_launcher_background.png", optimize=True)
         Image.new("RGBA", (layer, layer), (0, 0, 0, 0)).save(folder / "ic_launcher_foreground.png")
         n += 3
     anydpi = ANDROID / "mipmap-anydpi-v26"
@@ -96,7 +121,7 @@ def android(img: Image.Image) -> int:
 def web(img: Image.Image) -> int:
     for px in (192, 512):
         sized(img, px).save(WEB / "icons" / f"Icon-{px}.png", optimize=True)
-        sized(img, px).save(WEB / "icons" / f"Icon-maskable-{px}.png", optimize=True)
+        inset(img, px, MASKABLE_INSET).save(WEB / "icons" / f"Icon-maskable-{px}.png", optimize=True)
     sized(img, 32).save(WEB / "favicon.png", optimize=True)
     return 5
 
@@ -115,9 +140,10 @@ def preview(img: Image.Image, out: pathlib.Path) -> None:
             if shape == "ios":
                 d.rounded_rectangle((0, 0, px - 1, px - 1), radius=round(px * 0.225), fill=255)
             else:
-                # Android crops the adaptive layer to its middle two thirds.
-                inner = round(px * 1.5)
-                icon = sized(img, inner).crop(((inner - px) // 2,) * 2 + ((inner + px) // 2,) * 2)
+                # Android shows the middle 72 of the adaptive layer's 108 dp.
+                layer = inset(img, round(px * 1.5), ADAPTIVE_INSET)
+                off = (layer.size[0] - px) // 2
+                icon = layer.crop((off, off, off + px, off + px))
                 d.ellipse((0, 0, px - 1, px - 1), fill=255)
             sheet.paste(icon, (x, y0 + (180 - px) // 2), mask)
             x += px + 30
