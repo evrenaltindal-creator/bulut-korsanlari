@@ -2,26 +2,14 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import '../../core/effects.dart';
-import '../../core/v3.dart';
 import '../paint_kit.dart';
 import 'raid_sim.dart';
+import 'raid_terrain.dart';
 
 /// Isometric view of the strafing run.
 class RaidPainter {
-  RaidPainter(this.sim, this.tr) {
+  RaidPainter(this.sim, this.tr) : terrain = RaidTerrain(sim) {
     final rng = math.Random(sim.config.seed * 13 + 5);
-    for (var u = 20.0; u < sim.config.length; u += 14) {
-      final hw = sim.halfWidth(u);
-      if (hw < 25) continue;
-      for (var k = 0; k < 2; k++) {
-        _tufts.add(
-          Offset(
-            u + rng.nextDouble() * 14,
-            (rng.nextDouble() * 2 - 1) * (hw - 12),
-          ),
-        );
-      }
-    }
     for (var i = 0; i < 26; i++) {
       _farClouds.add((
         Offset(rng.nextDouble() * 3000, rng.nextDouble()),
@@ -37,7 +25,7 @@ class RaidPainter {
 
   final RaidSim sim;
   final Tr tr;
-  final List<Offset> _tufts = [];
+  final RaidTerrain terrain;
   final List<(Offset, CloudShape, double)> _farClouds = [];
 
   late double _s;
@@ -56,23 +44,34 @@ class RaidPainter {
     _camU = sim.plane.x;
     _camV = sim.plane.y * 0.55;
 
+    canvas.save();
+    // A hit rattles the view.
+    if (sim.hitFlash > 0) {
+      canvas.translate(
+        math.sin(sim.time * 97) * 4 * sim.hitFlash,
+        math.cos(sim.time * 83) * 3 * sim.hitFlash,
+      );
+    }
     _paintBackground(canvas, size);
-    _paintIsland(canvas, size);
 
-    // Everything standing on or above the island, far to near.
+    // The island: recorded once per chunk in iso space, replayed here.
+    final uMin = _camU - 900;
+    final uMax = _camU + 1500;
+    canvas.save();
+    final origin = _anchor - iso0(_camU, _camV, 0) * _s;
+    canvas.translate(origin.dx, origin.dy);
+    canvas.scale(_s);
+    terrain.paint(canvas, uMin, uMax, sim.time);
+    canvas.restore();
+
+    final pl = sim.plane;
+    if (sim.halfWidth(pl.x) > pl.y.abs() && pl.z > -10) {
+      _planeShape(canvas, z: 0, color: const Color(0x44000000), shadow: true);
+    }
+
+    // Targets, far to near.
     final items = <(double, void Function())>[];
     double key(double u, double v) => v - u;
-    final uMin = _camU - 700;
-    final uMax = _camU + 1300;
-    for (final (u, v, kind) in sim.props) {
-      if (u < uMin || u > uMax) continue;
-      items.add((key(u, v), () => _paintProp(canvas, u, v, kind)));
-    }
-    for (final (u, len) in sim.docks) {
-      if (u < uMin || u > uMax) continue;
-      final hw = sim.halfWidth(u);
-      items.add((key(u, hw), () => _paintDock(canvas, u, hw, len)));
-    }
     for (final t in sim.targets) {
       if (t.u < uMin || t.u > uMax) continue;
       items.add((key(t.u, t.v), () => _paintTarget(canvas, t)));
@@ -87,6 +86,7 @@ class RaidPainter {
     _paintPlane(canvas);
     _paintFlak(canvas);
     _paintEffects(canvas);
+    canvas.restore();
     _paintHud(canvas, size, safe);
 
     if (sim.hitFlash > 0) {
@@ -114,126 +114,6 @@ class RaidPainter {
       final px = x / 3000 * (size.width + 400) - 200;
       final py = size.height * (0.25 + o.dy * 0.85) + (_camU * 0.1) % 40;
       shape.paint(canvas, Offset(px, py), r * _s, 0.55);
-    }
-  }
-
-  void _paintIsland(Canvas canvas, Size size) {
-    final L = sim.config.length;
-    final u0 = math.max(0.0, _camU - 900);
-    final u1 = math.min(L, _camU + 1500);
-    if (u1 <= u0) return;
-    const step = 24.0;
-    final us = <double>[];
-    for (var u = u0; u < u1; u += step) {
-      us.add(u);
-    }
-    us.add(u1);
-
-    double ends(double u) => smoothstep(0, 260, u) * smoothstep(L, L - 260, u);
-
-    // Rocky underside hanging below the front (right) edge.
-    final under = Path();
-    for (var i = 0; i < us.length; i++) {
-      final u = us[i];
-      final p = iso(u, sim.halfWidth(u), 0);
-      i == 0 ? under.moveTo(p.dx, p.dy) : under.lineTo(p.dx, p.dy);
-    }
-    for (var i = us.length - 1; i >= 0; i--) {
-      final u = us[i];
-      final p = iso(
-        u,
-        sim.halfWidth(u) * 0.15,
-        -sim.undersideDepth(u) * ends(u),
-      );
-      under.lineTo(p.dx, p.dy);
-    }
-    under.close();
-    canvas.drawPath(
-      under,
-      Paint()
-        ..shader = Gradient.linear(
-          iso(_camU, 0, 0),
-          iso(_camU, 0, -200),
-          const [Palette.rockLight, Palette.rock, Palette.rockDark],
-          const [0, 0.4, 1],
-        ),
-    );
-    // Strata lines.
-    final strata = Paint()
-      ..color = const Color(0x553A2A24)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    for (final f in [0.25, 0.5, 0.72]) {
-      final path = Path();
-      for (var i = 0; i < us.length; i++) {
-        final u = us[i];
-        final hw = sim.halfWidth(u);
-        final p = iso(
-          u,
-          lerpDouble(hw, hw * 0.15, f),
-          -sim.undersideDepth(u) * ends(u) * f,
-        );
-        i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
-      }
-      canvas.drawPath(path, strata);
-    }
-
-    // Grass top.
-    final top = Path();
-    for (var i = 0; i < us.length; i++) {
-      final p = iso(us[i], -sim.halfWidth(us[i]), 0);
-      i == 0 ? top.moveTo(p.dx, p.dy) : top.lineTo(p.dx, p.dy);
-    }
-    for (var i = us.length - 1; i >= 0; i--) {
-      final p = iso(us[i], sim.halfWidth(us[i]), 0);
-      top.lineTo(p.dx, p.dy);
-    }
-    top.close();
-    canvas.drawPath(top, Paint()..color = Palette.grass);
-    canvas.drawPath(
-      top,
-      Paint()
-        ..color = Palette.grassDark
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-
-    // Dirt road down the middle.
-    final road = Path();
-    var started = false;
-    for (final u in us) {
-      if (sim.halfWidth(u) < 50) continue;
-      final p = iso(u, 40 * math.sin(u / 300), 0);
-      if (!started) {
-        road.moveTo(p.dx, p.dy);
-        started = true;
-      } else {
-        road.lineTo(p.dx, p.dy);
-      }
-    }
-    canvas.drawPath(
-      road,
-      Paint()
-        ..color = const Color(0xFFC9A877)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 14 * _s
-        ..strokeCap = StrokeCap.round,
-    );
-
-    final tuft = Paint()..color = Palette.grassLight;
-    for (final t in _tufts) {
-      if (t.dx < u0 || t.dx > u1) continue;
-      final p = iso(t.dx, t.dy, 0);
-      canvas.drawOval(
-        Rect.fromCenter(center: p, width: 5 * _s, height: 2.5 * _s),
-        tuft,
-      );
-    }
-
-    // Plane's shadow on the grass.
-    final pl = sim.plane;
-    if (sim.halfWidth(pl.x) > pl.y.abs() && pl.z > -10) {
-      _planeShape(canvas, z: 0, color: const Color(0x44000000), shadow: true);
     }
   }
 
@@ -274,83 +154,6 @@ class RaidPainter {
       ], true),
       Paint()..color = top,
     );
-  }
-
-  void _paintProp(Canvas canvas, double u, double v, int kind) {
-    if (kind < 6) {
-      // Tree: trunk and two blobs.
-      final base = iso(u, v, 0);
-      canvas.drawOval(
-        Rect.fromCenter(center: base, width: 16 * _s, height: 7 * _s),
-        Paint()..color = const Color(0x33000000),
-      );
-      canvas.drawLine(
-        base,
-        iso(u, v, 14),
-        Paint()
-          ..color = Palette.woodDark
-          ..strokeWidth = 3 * _s,
-      );
-      canvas.drawCircle(
-        iso(u, v, 20),
-        10 * _s,
-        Paint()..color = Palette.grassDark,
-      );
-      canvas.drawCircle(
-        iso(u, v, 24) + Offset(-2 * _s, -2 * _s),
-        6 * _s,
-        Paint()..color = Palette.grass,
-      );
-    } else if (kind < 8) {
-      // Hut with a red roof.
-      _isoBox(
-        canvas,
-        u,
-        v,
-        12,
-        10,
-        14,
-        const Color(0xFFB2583C),
-        const Color(0xFFD8C3A0),
-        const Color(0xFFB8A27F),
-      );
-    } else {
-      // Boulder.
-      final c = iso(u, v, 4);
-      canvas.drawOval(
-        Rect.fromCenter(center: c, width: 18 * _s, height: 11 * _s),
-        Paint()..color = Palette.rockLight,
-      );
-    }
-  }
-
-  void _paintDock(Canvas canvas, double u, double hw, double len) {
-    final planks = [
-      iso(u - 8, hw - 10, 0),
-      iso(u + 8, hw - 10, 0),
-      iso(u + 8, hw + len, 0),
-      iso(u - 8, hw + len, 0),
-    ];
-    canvas.drawPath(
-      Path()..addPolygon(planks, true),
-      Paint()..color = Palette.wood,
-    );
-    final edge = Paint()
-      ..color = Palette.woodDark
-      ..strokeWidth = 1.2;
-    for (var k = 0.0; k < len; k += 9) {
-      canvas.drawLine(iso(u - 8, hw + k, 0), iso(u + 8, hw + k, 0), edge);
-    }
-    // Support posts hanging into the void.
-    for (final k in [len * 0.5, len]) {
-      canvas.drawLine(
-        iso(u + 8, hw + k, 0),
-        iso(u + 8, hw + k, -26),
-        Paint()
-          ..color = Palette.woodDark
-          ..strokeWidth = 2.5 * _s,
-      );
-    }
   }
 
   void _paintTarget(Canvas canvas, RaidTarget t) {
@@ -591,9 +394,11 @@ class RaidPainter {
   }) {
     final pl = sim.plane;
     final bank = sim.bank;
+    // Drawn a little larger than life so it holds its own among the detail.
+    const k = 1.3;
     Offset p(double fu, double fv) {
-      final dz = shadow ? 0.0 : -fv * math.sin(bank);
-      return iso(pl.x + fu, pl.y + fv * math.cos(bank), z + dz);
+      final dz = shadow ? 0.0 : -fv * k * math.sin(bank);
+      return iso(pl.x + fu * k, pl.y + fv * k * math.cos(bank), z + dz);
     }
 
     final wings = [

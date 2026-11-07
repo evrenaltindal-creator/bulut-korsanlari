@@ -141,16 +141,7 @@ class CockpitPainter {
       ..lineTo(w, edge)
       ..quadraticBezierTo(w / 2, mid * 2 - edge, 0, edge)
       ..close();
-    // The cut-out over the pilot's head.
-    final cut = Path()
-      ..addOval(
-        Rect.fromCenter(
-          center: Offset(w / 2, 0),
-          width: w * 0.16,
-          height: mid * 1.5,
-        ),
-      );
-    final wing = Path.combine(PathOperation.difference, band, cut);
+    final wing = band;
     canvas.drawPath(
       wing,
       Paint()
@@ -217,18 +208,10 @@ class CockpitPainter {
       final x = w / 2 + side * w * 0.455;
       final cabaneTop = Offset(w / 2 + side * w * 0.075, top - 4);
       final cabaneBottom = Offset(w / 2 + side * w * 0.1, h * 0.69);
-      // Rigging wires crossing between the outer strut and the cabane.
-      canvas.drawLine(Offset(x, top + 6), cabaneBottom, wire);
-      canvas.drawLine(
-        Offset(x, bottom - 10),
-        cabaneTop + const Offset(0, 6),
-        wire,
-      );
-      canvas.drawLine(
-        Offset(x - side * strutW, top + 6),
-        Offset(x - side * strutW, bottom),
-        wire,
-      );
+      // Rigging wires crossing in the outer bay, beyond the strut.
+      final edge = side < 0 ? 0.0 : w;
+      canvas.drawLine(Offset(x, top + 6), Offset(edge, bottom - 6), wire);
+      canvas.drawLine(Offset(x, bottom - 6), Offset(edge, top + 10), wire);
       // Outer interplane strut (streamlined wood).
       final strut = Rect.fromLTRB(x - strutW / 2, top, x + strutW / 2, bottom);
       canvas.drawRRect(
@@ -247,8 +230,8 @@ class CockpitPainter {
         cabaneBottom,
         Paint()
           ..color = _woodDark
-          ..strokeWidth = w * 0.011
-          ..strokeCap = StrokeCap.round,
+          ..strokeWidth = w * 0.007
+          ..strokeCap = StrokeCap.butt,
       );
     }
   }
@@ -446,7 +429,7 @@ class CockpitPainter {
       Offset(w / 2 + gap * 2, y),
       r,
       sim.heat,
-      tr('hud.heat'),
+      tr('hud.heatGauge'),
       zones: const [(0, 0.7, Palette.ok), (0.7, 1, Palette.danger)],
     );
     // Warning lamps beside the outer gauges.
@@ -629,10 +612,22 @@ class CockpitPainter {
   }
 
   void _paintHoles(Canvas canvas, Size size) {
-    for (final f in _holes) {
+    final torn = Paint()..color = const Color(0xCCE8DCC0);
+    final dark = Paint()..color = const Color(0xFF0B0B0B);
+    for (var i = 0; i < _holes.length; i++) {
+      final f = _holes[i];
       final p = Offset(f.dx * size.width, f.dy * size.height);
-      canvas.drawCircle(p, 4.5, Paint()..color = const Color(0x55E8DCC0));
-      canvas.drawCircle(p, 3, Paint()..color = const Color(0xFF0B0B0B));
+      // A ragged star of torn fabric or splintered wood round the hole.
+      final star = Path();
+      for (var k = 0; k < 10; k++) {
+        final a = k * math.pi / 5 + i;
+        final r = k.isEven ? 7.0 : 3.5;
+        final q = p + Offset(math.cos(a), math.sin(a)) * r;
+        k == 0 ? star.moveTo(q.dx, q.dy) : star.lineTo(q.dx, q.dy);
+      }
+      star.close();
+      canvas.drawPath(star, torn);
+      canvas.drawCircle(p, 3.2, dark);
     }
   }
 

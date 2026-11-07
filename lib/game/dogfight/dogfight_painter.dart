@@ -154,7 +154,7 @@ class DogfightPainter {
       );
     }
     // The tops of the cloud sea: a dense field of cumulus below the plane.
-    for (var i = 0; i < 70; i++) {
+    for (var i = 0; i < 90; i++) {
       _floor.add(
         _CloudSlot(
           V3(
@@ -163,7 +163,7 @@ class DogfightPainter {
             (rng.nextDouble() - 0.5) * _floorBox * 2,
           ),
           CloudShape(rng, puffs: 6),
-          150 + rng.nextDouble() * 170,
+          260 + rng.nextDouble() * 340,
         ),
       );
     }
@@ -184,7 +184,7 @@ class DogfightPainter {
   }
 
   static const double _cloudBox = 2600;
-  static const double _floorBox = 3200;
+  static const double _floorBox = 5200;
   static const double _islandBox = 12000;
   static final V3 _sunDir = V3.fromAngles(0.7, 0.32);
 
@@ -274,7 +274,7 @@ class DogfightPainter {
       }
     }
 
-    addClouds(_floor, _floorBox, 3200, 0.95);
+    addClouds(_floor, _floorBox, 5200, 0.95);
     addClouds(_clouds, _cloudBox, 2500, 0.85);
 
     for (final e in sim.pirates) {

@@ -4,10 +4,11 @@ import 'dart:ui';
 import '../../core/effects.dart';
 import '../paint_kit.dart';
 import 'bombing_sim.dart';
+import 'bombing_terrain.dart';
 
 /// Looking straight down through the clouds at a pirate base.
 class BombingPainter {
-  BombingPainter(this.sim, this.tr) {
+  BombingPainter(this.sim, this.tr) : terrain = BombingTerrain(sim) {
     final rng = math.Random(sim.config.seed * 17 + 3);
     for (var i = 0; i < 18; i++) {
       _lowClouds.add((
@@ -16,30 +17,20 @@ class BombingPainter {
         50 + rng.nextDouble() * 50,
       ));
     }
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < 7; i++) {
       _highClouds.add((
         Offset(rng.nextDouble(), rng.nextDouble()),
         CloudShape(rng, puffs: 6),
         70 + rng.nextDouble() * 70,
       ));
     }
-    for (var i = 0; i < 140; i++) {
-      final y = -100 + rng.nextDouble() * (sim.config.length + 200);
-      final hw = sim.halfWidthAt(y);
-      if (hw < 30) continue;
-      _patches.add((
-        Offset((rng.nextDouble() * 2 - 1) * (hw - 20), y),
-        6 + rng.nextDouble() * 16,
-        rng.nextInt(3),
-      ));
-    }
   }
 
   final BombingSim sim;
   final Tr tr;
+  final BombingTerrain terrain;
   final List<(Offset, CloudShape, double)> _lowClouds = [];
   final List<(Offset, CloudShape, double)> _highClouds = [];
-  final List<(Offset, double, int)> _patches = [];
 
   late double _s;
   late Offset _anchor;
@@ -71,7 +62,7 @@ class BombingPainter {
     _paintBombs(canvas);
     _paintGroundEffects(canvas);
     _paintSight(canvas);
-    _cloudLayer(canvas, _highClouds, parallax: 1.6, opacity: 0.38, scale: 1.4);
+    _cloudLayer(canvas, _highClouds, parallax: 1.6, opacity: 0.28, scale: 1.4);
     _paintAirEffects(canvas);
     _paintPlane(canvas);
     _paintHud(canvas, size, safe);
@@ -101,65 +92,30 @@ class BombingPainter {
   }
 
   void _paintRock(Canvas canvas) {
-    final visibleMin = sim.plane.y - _size.height * 0.4 / _s - 200;
-    final visibleMax = sim.plane.y + _size.height / _s + 200;
-    final pts = sim.outline
-        .where((p) => p.$1 > visibleMin - 60 && p.$1 < visibleMax + 60)
-        .toList();
-    if (pts.length < 2) return;
-    Path outlinePath(double grow, Offset shift) {
-      final path = Path();
-      for (var i = 0; i < pts.length; i++) {
-        final (y, hw) = pts[i];
-        final p = g(-hw - grow, y) + shift;
-        i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
-      }
-      for (var i = pts.length - 1; i >= 0; i--) {
-        final (y, hw) = pts[i];
-        final p = g(hw + grow, y) + shift;
-        path.lineTo(p.dx, p.dy);
-      }
-      return path..close();
-    }
+    final yMin = sim.plane.y - _size.height * 0.4 / _s - 200;
+    final yMax = sim.plane.y + _size.height / _s + 200;
+    canvas.save();
+    canvas.translate(_anchor.dx - _camX * _s, _anchor.dy + sim.plane.y * _s);
+    canvas.scale(_s);
+    terrain.paint(canvas, yMin, yMax);
+    _paintCloudShadows(canvas, yMin, yMax);
+    canvas.restore();
+  }
 
-    // The rock's shadow on the clouds far below.
-    canvas.drawPath(
-      outlinePath(0, Offset(30 * _s, 26 * _s)),
-      Paint()..color = const Color(0x33203048),
-    );
-    // Cliff edge, then the plateau.
-    canvas.drawPath(
-      outlinePath(10, Offset(4 * _s, 8 * _s)),
-      Paint()..color = Palette.rockDark,
-    );
-    canvas.drawPath(
-      outlinePath(0, Offset.zero),
-      Paint()..color = const Color(0xFFB59772),
-    );
-    canvas.drawPath(
-      outlinePath(-14, Offset.zero),
-      Paint()
-        ..color = const Color(0x22000000)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-    const colors = [Color(0xFF9E8260), Color(0xFF7FA05A), Color(0xFFC7AE88)];
-    for (final (o, r, k) in _patches) {
-      if (o.dy < visibleMin || o.dy > visibleMax) continue;
-      canvas.drawCircle(g(o.dx, o.dy), r * _s, Paint()..color = colors[k]);
-    }
-    // A runway stripe for the pirates' own planes.
-    final a = g(-18, 80);
-    final b = g(18, math.min(sim.config.length - 80, 900));
-    canvas.drawRect(
-      Rect.fromPoints(a, b),
-      Paint()..color = const Color(0xFF8C7A64),
-    );
-    final dash = Paint()
-      ..color = const Color(0xCCEFE6D2)
-      ..strokeWidth = 2;
-    for (var y = 100.0; y < math.min(sim.config.length - 100, 880); y += 40) {
-      canvas.drawLine(g(0, y), g(0, y + 18), dash);
+  /// Shadows of passing clouds sliding over the plateau with the wind.
+  void _paintCloudShadows(Canvas canvas, double yMin, double yMax) {
+    final paint = Paint()..color = const Color(0x1C102030);
+    for (var i = 0; i < 7; i++) {
+      final y = (i * 410.0 + sim.time * 6) % (sim.config.length + 600) - 300;
+      if (y < yMin - 200 || y > yMax + 200) continue;
+      final x = ((i * 173 + sim.time * sim.config.wind * 0.8) % 900) - 450;
+      for (var k = 0; k < 4; k++) {
+        canvas.drawCircle(
+          gp(x + k * 38 - 60, y + math.sin(k * 1.7 + i) * 26),
+          46 + (k % 2) * 18,
+          paint,
+        );
+      }
     }
   }
 
