@@ -11,6 +11,14 @@ import 'scope.dart';
 import 'sky_backdrop.dart';
 import 'theme.dart';
 
+/// Small text links over the sky: a shadow keeps them readable over
+/// pale clouds and the sunset.
+const _linkStyle = TextStyle(
+  color: Colors.white,
+  fontWeight: FontWeight.w600,
+  shadows: [Shadow(color: Color(0xDD000000), blurRadius: 6)],
+);
+
 class TitleScreen extends StatelessWidget {
   const TitleScreen({super.key});
 
@@ -100,7 +108,7 @@ class TitleScreen extends StatelessWidget {
                           ),
                           label: Text(
                             context.tr('menu.howto'),
-                            style: const TextStyle(color: Colors.white),
+                            style: _linkStyle,
                           ),
                         ),
                         TextButton.icon(
@@ -108,7 +116,7 @@ class TitleScreen extends StatelessWidget {
                           icon: const Icon(Icons.tune, color: Colors.white70),
                           label: Text(
                             context.tr('menu.settings'),
-                            style: const TextStyle(color: Colors.white),
+                            style: _linkStyle,
                           ),
                         ),
                         TextButton.icon(
@@ -119,7 +127,7 @@ class TitleScreen extends StatelessWidget {
                           ),
                           label: Text(
                             context.tr('menu.about'),
-                            style: const TextStyle(color: Colors.white),
+                            style: _linkStyle,
                           ),
                         ),
                       ],
