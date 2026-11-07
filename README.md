@@ -111,9 +111,33 @@ daire, küçük boyutlar) çizer. Android uyarlanabilir simgede ve web'in
 maskelenebilir simgesinde resim küçültülüp kendi kenar rengiyle çevrelenir;
 yoksa daire kanat uçlarını ve pusula harflerini keserdi.
 
+## TestFlight (iPhone)
+
+`.github/workflows/ios-testflight.yml` elle başlatılır (Actions → iOS
+TestFlight → Run workflow): imzalar, testleri çalıştırır, IPA'yı derler ve
+TestFlight'a yükler. Notu `TESTFLIGHT_NOTES.txt`'dir. Paket kimliği
+`com.vardiox.bulutkorsanlari`, yalnızca iPhone, yalnızca yatay.
+
+Bir kerelik hazırlık:
+
+1. Depo → Settings → Environments → `testflight` ortamı; gizli değerler:
+   `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`,
+   `APP_STORE_CONNECT_PRIVATE_KEY` (.p8 dosyasının tamamı),
+   `CERTIFICATE_PRIVATE_KEY` (dağıtım sertifikasının RSA anahtarı).
+   Değerler depoya ya da sohbete yazılmaz.
+2. İş akışı ilk koşuda paket kimliğini Apple'a kaydeder. App Store
+   Connect'te uygulama kaydı yoksa durur ve söyler: Uygulamalar → + → Yeni
+   Uygulama, bu kimlikle oluşturulur (API bunu yapamaz).
+3. TestFlight → Dahili Test → grup (otomatik dağıtım açık), test eden kişi
+   eklenir. Sonraki her koşu derlemeyi gruba kendiliğinden düşürür.
+
+Derleme numarası App Store Connect'teki son numaradan bir fazladır; sürüm
+adı `pubspec.yaml`'dan gelir.
+
 ## Bilinen eksikler
 
-- Müzik ve efektler gerçek telefonda denenmedi; tarayıcıda (Chromium)
-  çaldıkları doğrulandı.
-- Gerçek telefonlarda denenmedi; tarayıcıda (Chromium) ve testlerde denendi.
-- Paket kimliği `com.bulutkorsanlari.bulut_korsanlari` yer tutucudur.
+- Gerçek telefonlarda henüz denenmedi; tarayıcıda (Chromium) ve testlerde
+  denendi. Müzik ve efektlerin tarayıcıda çaldığı doğrulandı.
+- Oyun telefonun sessiz düğmesine uyar: telefon sessizdeyken ses çıkmaz.
+- Android paket kimliği `com.vardiox.bulutkorsanlari`; Kotlin ad alanı
+  (`namespace`) eski yer tutucu adla kaldı, mağazada görünmez.

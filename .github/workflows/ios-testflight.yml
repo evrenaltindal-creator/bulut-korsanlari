@@ -1,0 +1,200 @@
+name: iOS TestFlight
+
+# Elle başlatılır (Actions → iOS TestFlight → Run workflow). İmzalı IPA'yı
+# derleyip TestFlight'a yükler; dahili test grubundakiler TestFlight
+# uygulamasından indirir.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_store_release:
+        description: "App Store'a gönderilebilir derleme (yalnız dahili test işareti olmadan)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bulut-ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    name: Signed IPA to TestFlight
+    runs-on: macos-26
+    timeout-minutes: 90
+    environment: testflight
+    env:
+      BUNDLE_ID: com.vardiox.bulutkorsanlari
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Validate secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in \
+            APP_STORE_CONNECT_ISSUER_ID \
+            APP_STORE_CONNECT_KEY_IDENTIFIER \
+            APP_STORE_CONNECT_PRIVATE_KEY \
+            CERTIFICATE_PRIVATE_KEY; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::'testflight' ortamında $name gizli değeri eksik."
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Codemagic CLI tools
+        run: python -m pip install codemagic-cli-tools==0.67.0
+
+      # Önce Apple tarafı: paket kimliği yoksa --create onu kaydeder, sonra
+      # sertifika ve profili getirir. Uygulama kaydı yoksa burada durulur;
+      # Flutter derlemesine (uzun ve pahalı macOS dakikası) hiç geçilmez.
+      - name: Register bundle ID and fetch signing files
+        run: |
+          app-store-connect fetch-signing-files \
+            "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --strict-match-identifier \
+            --create
+
+      - name: Find the App Store Connect app
+        shell: bash
+        run: |
+          set -euo pipefail
+          app-store-connect apps list \
+            --bundle-id-identifier "$BUNDLE_ID" \
+            --strict-match-identifier \
+            --json > "$RUNNER_TEMP/apps.json"
+          app_id="$(python -I -c 'import json, sys
+          apps = json.load(open(sys.argv[1]))
+          print(apps[0]["id"] if apps else "")' "$RUNNER_TEMP/apps.json")"
+          if [[ -z "$app_id" ]]; then
+            echo "::error::App Store Connect'te $BUNDLE_ID kimlikli uygulama yok. Paket kimliği kaydedildi; Uygulamalar → + → Yeni Uygulama ile bu kimliği seçip uygulamayı oluşturun, sonra iş akışını yeniden çalıştırın."
+            exit 1
+          fi
+          echo "App Store Connect app id: $app_id"
+          echo "APP_ID=$app_id" >> "$GITHUB_ENV"
+
+      - name: Select Xcode 26.6
+        run: sudo xcode-select --switch /Applications/Xcode_26.6.app
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.1
+          cache: true
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      - name: Quality gate
+        run: |
+          dart format --output=none --set-exit-if-changed .
+          flutter analyze
+          flutter test --reporter expanded
+
+      - name: Configure keychain and Xcode signing
+        env:
+          APP_STORE_RELEASE: ${{ inputs.app_store_release }}
+        run: |
+          # Varsayılan: yalnız dahili TestFlight. Böyle bir derleme App
+          # Store'a gönderilemez; mağaza sürümü için işaret kaldırılır.
+          export_options='{"testFlightInternalTestingOnly": true}'
+          if [[ "$APP_STORE_RELEASE" == "true" ]]; then
+            export_options='{}'
+          fi
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles \
+            --project ios/Runner.xcodeproj \
+            --archive-method app-store \
+            --custom-export-options="$export_options"
+
+      - name: Determine next build number
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest="$(app-store-connect get-latest-build-number \
+            "$APP_ID" \
+            --all-versions \
+            --platform IOS)"
+          if [[ -z "$latest" ]]; then
+            latest=0
+          fi
+          if ! [[ "$latest" =~ ^[0-9]+$ ]]; then
+            echo "App Store Connect returned a non-numeric build number." >&2
+            exit 1
+          fi
+          next=$((latest + 1))
+          if (( GITHUB_RUN_NUMBER > next )); then
+            next="$GITHUB_RUN_NUMBER"
+          fi
+          echo "BUILD_NUMBER=$next" >> "$GITHUB_ENV"
+
+      # Sürüm adı (1.0.0) pubspec.yaml'dan gelir; derleme numarası her
+      # yüklemede artar.
+      - name: Build signed IPA
+        run: >-
+          flutter build ipa
+          --release
+          --build-number="$BUILD_NUMBER"
+          --export-options-plist="$HOME/export_options.plist"
+
+      - name: Verify IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          ipa_files=(build/ios/ipa/*.ipa)
+          if (( ${#ipa_files[@]} != 1 )); then
+            echo "Expected exactly one IPA, found ${#ipa_files[@]}." >&2
+            exit 1
+          fi
+          contents="$(mktemp -d)"
+          trap 'rm -rf "$contents"' EXIT
+          unzip -q "${ipa_files[0]}" -d "$contents"
+          plist="$contents/Payload/Runner.app/Info.plist"
+          read_key() { /usr/libexec/PlistBuddy -c "Print :$1" "$plist"; }
+          test "$(read_key CFBundleIdentifier)" = "$BUNDLE_ID"
+          test "$(read_key CFBundleVersion)" = "$BUILD_NUMBER"
+          test "$(read_key ITSAppUsesNonExemptEncryption)" = "false"
+          echo "$(read_key CFBundleDisplayName) $(read_key CFBundleShortVersionString) ($(read_key CFBundleVersion))"
+          # Müzik, efektler ve görseller pakette olmalı.
+          assets="$contents/Payload/Runner.app/Frameworks/App.framework/flutter_assets/assets"
+          ls "$assets/audio/music/"*.mp3 "$assets/audio/sfx/"*.wav \
+            "$assets/images/missions/"*.jpg > /dev/null
+
+      - name: Upload to TestFlight
+        run: |
+          # Dahili test grubunda "otomatik dağıtım" açıksa derleme işlendikten
+          # sonra kendiliğinden TestFlight uygulamasına düşer.
+          app-store-connect publish \
+            --path 'build/ios/ipa/*.ipa' \
+            --locale tr \
+            --whats-new @file:TESTFLIGHT_NOTES.txt \
+            --max-find-build-wait 15 \
+            --max-build-processing-wait 60
+
+      - name: Upload IPA artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: bulut-korsanlari-ipa-${{ github.run_number }}
+          path: build/ios/ipa/*.ipa
+          if-no-files-found: ignore
+          retention-days: 14

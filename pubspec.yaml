@@ -1,7 +1,7 @@
 name: bulut_korsanlari
 description: "Bulut Korsanları — sky-pirate flying game (dogfight, low-level raid, bombing run) built with Flutter and Flame."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.13.1

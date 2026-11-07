@@ -1,0 +1,12 @@
+Bulut Korsanları — ilk deneme sürümü.
+
+Ses için telefonun yanındaki sessiz düğmesi KAPALI olmalı: oyun, telefon sessizdeyken ses çıkarmaz.
+
+Denenecekler:
+- Yeni sefer → bölüm kapağı → seyir defteri → ilk görev.
+- Kontroller: sol yarı yüzen çubuk, sağ yarı ateş / bomba. Ayarlar'da dikey eksen ters çevrilebilir.
+- Üç görev türü: it dalaşı, alçak baskın, bombardıman.
+- Müzik ve efektler: ekranlar arası geçiş, duraklatma, uygulamadan çıkıp dönme.
+- Görev sonu değerlendirme ekranı, pilot kayıtları.
+
+Takılma, yavaşlama, okunmayan yazı, zor ya da kolay gelen görev: ekran görüntüsüyle birlikte not alın.
