@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Synthesises the game's sound effects; no recordings, no licences.
+"""Synthesises the sound effects no CC0 recording was found for.
 
   python3 tool/generate_sfx.py
 
-Writes assets/audio/sfx/<name>.wav (22.05 kHz, 16-bit, mono). Loops
-(gun, engine) are built from whole cycles so they repeat without a
-click. Output is deterministic (fixed seed). Needs numpy.
+Writes the engine loop, the falling bomb's whistle and the cockpit
+buzzer to assets/audio/sfx/<name>.wav (22.05 kHz, 16-bit, mono). The
+engine loop is built from whole cycles so it repeats without a click.
+Output is deterministic (fixed seed). Needs numpy. The other effects
+are recordings, prepared by tool/prepare_sfx.py.
 """
 
 import pathlib
@@ -75,24 +77,6 @@ def write(name: str, x: np.ndarray) -> None:
     print(f"  {name}: {len(x) / SR:.2f} s, {len(data) // 1024} KB")
 
 
-def gun_shot(n: int) -> np.ndarray:
-    tt = np.arange(n) / SR
-    crack = highpass(noise(n), 900) * env(n, 0.0005, 0.012)
-    body = lowpass(noise(n), 1600) * env(n, 0.001, 0.03) * 0.8
-    thump = np.sin(2 * np.pi * 95 * tt) * env(n, 0.001, 0.035) * 0.9
-    return crack + body + thump
-
-
-def gun_loop() -> np.ndarray:
-    """Ten rounds a second, one second long: loops seamlessly."""
-    step = int(SR * 0.1)
-    out = np.zeros(step * 10)
-    for k in range(10):
-        shot = gun_shot(step) * (0.85 + 0.3 * rng.random())
-        out[k * step:(k + 1) * step] += shot
-    return normalise(out, -3)
-
-
 def engine_loop() -> np.ndarray:
     """Radial engine drone, two seconds; every partial completes whole
     cycles in the loop so it repeats without a seam."""
@@ -112,53 +96,6 @@ def engine_loop() -> np.ndarray:
     return normalise(out, -6)
 
 
-def explosion(seconds: float = 1.7, deep: float = 1.0) -> np.ndarray:
-    n = int(SR * seconds)
-    tt = np.arange(n) / SR
-    sweep = 3000 * np.exp(-tt / 0.18) + 120
-    rumble = lowpass(noise(n), sweep) * env(n, 0.003, 0.45)
-    boom = np.sin(2 * np.pi * (55 * deep) * tt * (1 - 0.3 * tt)) * env(n, 0.005, 0.35) * 1.2
-    crack = highpass(noise(n), 1500) * env(n, 0.0005, 0.03) * 0.8
-    crackle = np.zeros(n)
-    for _ in range(40):
-        i = int(rng.uniform(0.08, seconds * 0.8) * SR)
-        m = min(int(SR * 0.006), n - i)
-        crackle[i:i + m] += noise(m) * env(m, 0.0002, 0.002) * rng.uniform(0.2, 0.6)
-    crackle *= np.exp(-tt / 0.5)
-    return normalise(fade(rumble + boom + crack + crackle, end=0.2), -1)
-
-
-def hit() -> np.ndarray:
-    n = int(SR * 0.14)
-    tt = np.arange(n) / SR
-    tick = highpass(noise(n), 2500) * env(n, 0.0003, 0.008)
-    ring = np.sin(2 * np.pi * 1850 * tt) * env(n, 0.0005, 0.03) * 0.5
-    thud = np.sin(2 * np.pi * 240 * tt) * env(n, 0.001, 0.025) * 0.6
-    return normalise(fade(tick + ring + thud), -4)
-
-
-def damage() -> np.ndarray:
-    n = int(SR * 0.35)
-    tt = np.arange(n) / SR
-    thud = np.sin(2 * np.pi * (130 - 70 * tt / 0.35) * tt) * env(n, 0.002, 0.08)
-    splinter = lowpass(noise(n), 2500) * env(n, 0.001, 0.05) * 0.9
-    rattle = np.zeros(n)
-    for k in range(5):
-        i = int(SR * (0.03 + 0.035 * k))
-        m = int(SR * 0.012)
-        rattle[i:i + m] += highpass(noise(m), 1200) * env(m, 0.0003, 0.004) * 0.5
-    return normalise(fade(thud + splinter + rattle), -2)
-
-
-def flak() -> np.ndarray:
-    n = int(SR * 0.7)
-    tt = np.arange(n) / SR
-    whump = lowpass(noise(n), 450) * env(n, 0.004, 0.16) * 1.4
-    low = np.sin(2 * np.pi * 68 * tt) * env(n, 0.004, 0.12)
-    pop = highpass(noise(n), 1800) * env(n, 0.0004, 0.006) * 0.35
-    return normalise(fade(whump + low + pop, end=0.1), -3)
-
-
 def bomb_drop() -> np.ndarray:
     """Release clunk, then a whistle falling for the bomb's 1.7 s drop."""
     n = int(SR * 1.7)
@@ -174,19 +111,6 @@ def bomb_drop() -> np.ndarray:
     return normalise(fade(whistle * 0.8 + clunk, end=0.05), -5)
 
 
-def jam() -> np.ndarray:
-    n = int(SR * 0.4)
-    tt = np.arange(n) / SR
-    out = np.zeros(n)
-    for start, f in ((0.0, 930), (0.13, 1310)):
-        i = int(SR * start)
-        m = n - i
-        ring = np.sin(2 * np.pi * f * tt[:m]) * env(m, 0.0005, 0.05)
-        click = highpass(noise(m), 2000) * env(m, 0.0003, 0.004)
-        out[i:] += ring * 0.7 + click
-    return normalise(fade(out), -5)
-
-
 def warning() -> np.ndarray:
     """Two-tone cockpit buzzer."""
     tt = t(0.5)
@@ -196,14 +120,8 @@ def warning() -> np.ndarray:
 
 
 def main() -> None:
-    write("gun", gun_loop())
     write("engine", engine_loop())
-    write("explosion", explosion())
-    write("hit", hit())
-    write("damage", damage())
-    write("flak", flak())
     write("bomb", bomb_drop())
-    write("jam", jam())
     write("warning", warning())
 
 

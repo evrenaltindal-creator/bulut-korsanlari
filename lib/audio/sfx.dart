@@ -2,17 +2,19 @@ import 'dart:async';
 
 import '../game/mission_result.dart';
 
-/// Every sound effect. Files come from `tool/generate_sfx.py` (synthesised
-/// in code, so there is nothing to license).
+/// Every sound effect. Gun, explosion, hits, damage, flak and the jam are
+/// CC0 recordings prepared by `tool/prepare_sfx.py`; the engine, the bomb
+/// whistle and the warning are synthesised by `tool/generate_sfx.py`.
+/// `assets/audio/SFX_SOURCE.txt` lists every source.
 enum Sfx {
-  gun(loop: true, level: 0.55),
+  gun(loop: true, level: 0.5),
   engine(loop: true, level: 0.32),
-  explosion(level: 0.9, gap: 0.08),
-  hit(level: 0.5, gap: 0.05),
-  damage(level: 0.85, gap: 0.08),
-  flak(level: 0.6, gap: 0.06),
+  explosion(level: 0.65, gap: 0.08),
+  hit(level: 0.42, gap: 0.05),
+  damage(level: 0.8, gap: 0.08),
+  flak(level: 0.45, gap: 0.06),
   bomb(level: 0.55),
-  jam(level: 0.7),
+  jam(level: 0.45),
   warning(level: 0.6, gap: 0.6);
 
   const Sfx({this.loop = false, this.level = 1, this.gap = 0});

@@ -1,0 +1,36 @@
+Bulut Korsanları - ses efektlerinin künyesi
+===========================================
+
+Bütün kayıtlar CC0 (kamu malı adanmışlık): atıf zorunlu değil, ticari
+kullanım serbest. Yine de kaynaklar burada ve Hakkında penceresinde
+(about.sfx) yazılı. 7 Kasım 2026'da OpenGameArt.org'dan indirildi.
+
+Hazırlama: tool/prepare_sfx.py (ffmpeg ile 22,05 kHz mono; baştaki
+sessizlik kırpılır, katmanlar karıştırılır, yumuşak sınırlayıcı, tepe
+seviyesi eşitleme). Özgün dosyalar depoda tutulmaz.
+
+Efekt            Kaynak (paket / dosya)                                 Yazar
+---------------  -----------------------------------------------------  -----------
+sfx/gun.wav      The Free Firearm Sound Library / AK-47 / C_27P.wav     bart
+                 (uzun seri, 8 atımlık dikişsiz döngü)
+                 https://opengameart.org/content/the-free-firearm-sound-library
+sfx/explosion.wav 25 CC0 bang / firework SFX / bang_09.ogg              rubberduck
+                 + Muffled Distant Explosion                            Nenad Simic
+                 https://opengameart.org/content/25-cc0-bang-firework-sfx
+                 https://opengameart.org/content/muffled-distant-explosion
+sfx/flak.wav     25 CC0 bang / firework SFX / bang_03.ogg               rubberduck
+                 + Muffled Distant Explosion (kısık)                    Nenad Simic
+sfx/hit.wav      100 CC0 metal and wood SFX / wood_hit_04.ogg           rubberduck
+                 + 75 CC0 breaking/falling/hit / bfh1_metal_hit_06.ogg  rubberduck
+                 https://opengameart.org/content/100-cc0-metal-and-wood-sfx
+                 https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx
+sfx/damage.wav   75 CC0 breaking/falling/hit / bfh1_hit_06.ogg,         rubberduck
+                 bfh1_wood_breaking_03.ogg; 100 CC0 SFX / metal_03.ogg
+                 https://opengameart.org/content/100-cc0-sfx
+sfx/jam.wav      75 CC0 breaking/falling/hit / bfh1_metal_hit_02.ogg,   rubberduck
+                 bfh1_metal_hit_04.ogg; 100 CC0 SFX / switch_01.ogg
+
+Kodla üretilenler (kayıt yok; tool/generate_sfx.py):
+sfx/engine.wav   pervaneli motor uğultusu (CC0 uçak motoru kaydı bulunamadı)
+sfx/bomb.wav     bomba bırakma ve düşüş ıslığı
+sfx/warning.wav  kokpit uyarı sesi

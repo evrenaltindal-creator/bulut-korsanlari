@@ -85,9 +85,12 @@ Parça değiştirirsen künyeyi ve süreyi de güncelle.
 
 ## Ses efektleri
 
-Makineli tüfek, motor, isabet, hasar, patlama, uçaksavar, bomba ıslığı,
-tutukluk ve alçak irtifa uyarısı `tool/generate_sfx.py` ile kodla
-sentezlenir (kayıt ya da lisans yok; `assets/audio/sfx/`). Simülasyonlar
+Makineli tüfek, patlama, uçaksavar, isabet, hasar ve tutukluk
+OpenGameArt.org'daki CC0 kayıtlardan `tool/prepare_sfx.py` ile hazırlanır
+(tüfek: gerçek bir tam otomatik seriden 8 atımlık dikişsiz döngü). Motor,
+bomba ıslığı ve uyarı sesi için CC0 kayıt bulunamadı; onlar
+`tool/generate_sfx.py` ile kodla sentezlenir. Kaynaklar
+`assets/audio/SFX_SOURCE.txt`'de. Simülasyonlar
 olay bildirir (`SimEvent`), `SfxDirector` bunları sese çevirir; motor
 perdesi hıza göre değişir, tüfek ateş tuşu basılıyken döner. Ayarlar'da
 müzikten ayrı bir efekt sesi var.

@@ -35,6 +35,9 @@ const _tr = <String, String>{
   'about.music':
       'Müzik: Google Gemini (Lyria) ile yapay zekâ kullanılarak üretildi; '
       'promptlar bu oyun için yazıldı.',
+  'about.sfx':
+      'Ses efektleri: OpenGameArt.org\'daki CC0 kayıtlardan (bart, '
+      'rubberduck, Nenad Simic) ve kodla üretilen seslerden.',
   'about.art':
       'Hikâye resimleri ve portreler: Google Flow\'da Nano Banana Pro ile '
       'yapay zekâ kullanılarak üretildi; promptlar bu oyun için yazıldı. '
@@ -266,6 +269,9 @@ const _en = <String, String>{
   'about.music':
       'Music: generated with AI using Google Gemini (Lyria), from prompts '
       'written for this game.',
+  'about.sfx':
+      'Sound effects: CC0 recordings from OpenGameArt.org (bart, rubberduck, '
+      'Nenad Simic) and sounds synthesised in code.',
   'about.art':
       'Story paintings and portraits: generated with AI using Nano Banana Pro '
       'in Google Flow, from prompts written for this game. In-game graphics '

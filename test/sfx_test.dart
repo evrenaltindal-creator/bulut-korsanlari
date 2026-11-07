@@ -261,6 +261,21 @@ void main() {
       }
     });
 
+    test('the source note covers every effect, and recordings are CC0', () {
+      final note = File('assets/audio/SFX_SOURCE.txt').readAsStringSync();
+      for (final s in Sfx.values) {
+        expect(note, contains('sfx/${s.name}.wav'), reason: s.name);
+      }
+      expect(note, contains('CC0'));
+      for (final lang in AppStrings.supported) {
+        expect(
+          AppStrings.table[lang]!['about.sfx'],
+          contains('CC0'),
+          reason: lang,
+        );
+      }
+    });
+
     test('no stray files and the folder is bundled', () {
       final names = Directory('assets/audio/sfx')
           .listSync()
