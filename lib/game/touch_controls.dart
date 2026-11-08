@@ -7,11 +7,15 @@ import 'package:flame/events.dart';
 import 'paint_kit.dart';
 
 /// A floating stick: it appears wherever the thumb lands on its half of
-/// the screen and reports how far the thumb has moved since.
-class TouchStick extends PositionComponent with DragCallbacks {
+/// the screen and reports how far the thumb has moved since. A tap that
+/// never turns into a drag goes to [onTapAt] instead (marking a target).
+class TouchStick extends PositionComponent with DragCallbacks, TapCallbacks {
   TouchStick({this.radius = 62});
 
   final double radius;
+
+  /// Called with the screen position of a plain tap.
+  bool Function(Vector2 screen)? onTapAt;
   Vector2? _origin;
   Vector2 _knob = Vector2.zero();
 
@@ -20,6 +24,9 @@ class TouchStick extends PositionComponent with DragCallbacks {
       _origin == null ? 0 : (_knob.x / radius).clamp(-1.0, 1.0);
   double get valueY =>
       _origin == null ? 0 : (-_knob.y / radius).clamp(-1.0, 1.0);
+
+  @override
+  void onTapUp(TapUpEvent event) => onTapAt?.call(event.canvasPosition);
 
   @override
   void onDragStart(DragStartEvent event) {
@@ -82,6 +89,10 @@ class ActionZone extends PositionComponent with TapCallbacks, DragCallbacks {
 
   String label;
   void Function()? onPress;
+
+  /// Offered every new tap first, with its screen position; returning true
+  /// takes the tap (a target was marked) so it does not fire.
+  bool Function(Vector2 screen)? onTapAt;
   final Set<int> _taps = {};
   final Set<int> _drags = {};
   double _t = 0;
@@ -101,8 +112,10 @@ class ActionZone extends PositionComponent with TapCallbacks, DragCallbacks {
   }
 
   @override
-  void onTapDown(TapDownEvent event) =>
-      _press(() => _taps.add(event.pointerId));
+  void onTapDown(TapDownEvent event) {
+    if (onTapAt?.call(event.canvasPosition) ?? false) return;
+    _press(() => _taps.add(event.pointerId));
+  }
 
   @override
   void onTapUp(TapUpEvent event) => _taps.remove(event.pointerId);

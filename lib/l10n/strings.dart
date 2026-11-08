@@ -115,8 +115,9 @@ const _tr = <String, String>{
   'm2.brief':
       'Korsanların ikmal deposu Çakıl Kayası adlı küçük bir adada. Alçaktan '
       'gir, sandıkları ve yakıt tanklarını vur; yanan bir tank yanındakileri de '
-      'götürür. Topçulara dikkat: alçak uçmak isabeti artırır ama seni onlara '
-      'da yaklaştırır.',
+      'götürür. Vurmak istediğin hedefe dokun: uçak ona döner, menzile girince '
+      'kendisi ateş eder. Topçulara dikkat: alçak uçmak isabeti artırır ama '
+      'seni onlara da yaklaştırır.',
   'm2.win': 'Çakıl Kayası\'ndan yükselen duman akşama kadar görüldü. Korsanlar bu kış aç kalacak.',
   'm2.lose': 'Deponun çoğu sağlam kaldı. Korsanlar ikmallerini sürdürüyor.',
 
@@ -216,8 +217,9 @@ const _tr = <String, String>{
       'İt dalaşı: silahlar ısınır; tutukluk olursa soğumasını bekle. Ekran '
       'dışındaki düşmanları kenardaki oklar, hepsini sol üstteki radar '
       'gösterir.\n\n'
-      'Alçak baskın: yukarı/aşağı irtifayı değiştirir; alçakta mermiler yakına '
-      've daha isabetli düşer.\n\n'
+      'Alçak baskın: hedefe dokun, uçak ona döner ve menzile girince kendisi '
+      'ateş eder; çubukla istediğin an araya girersin. Yukarı/aşağı irtifayı '
+      'değiştirir; alçakta mermiler yakına ve daha isabetli düşer.\n\n'
       'Bombardıman: nişangâh rüzgârı hesaba katmaz. Yukarı/aşağı hızı '
       'değiştirir. Çerçeveli hedefler ana hedeflerdir.\n\n'
       'Klavye: ok tuşları veya WASD; Boşluk ateş eder ya da bomba bırakır.',
@@ -241,6 +243,7 @@ const _tr = <String, String>{
   'hud.bombs': 'Bomba',
   'hud.primary': 'Ana hedef',
   'hud.wind': 'Rüzgâr',
+  'hud.tapTarget': 'Hedefe dokun: uçak ona döner ve kendisi ateş eder',
   'control.fire': 'ATEŞ',
   'control.drop': 'BOMBA',
 
@@ -351,8 +354,9 @@ const _en = <String, String>{
   'm2.brief':
       'The pirates keep their supply cache on a small island called Pebble '
       'Rock. Go in low and hit the crates and fuel tanks; a burning tank takes '
-      'its neighbours with it. Watch the gunners: flying low improves your aim '
-      'but also brings you closer to them.',
+      'its neighbours with it. Tap the target you want: the plane turns to it '
+      'and opens fire by itself once it is in range. Watch the gunners: flying '
+      'low improves your aim but also brings you closer to them.',
   'm2.win': 'The smoke over Pebble Rock was visible until nightfall. The pirates will go hungry this winter.',
   'm2.lose':
       'Most of the cache survived. The pirates still have their supplies.',
@@ -455,8 +459,10 @@ const _en = <String, String>{
       'Dogfight: guns heat up; if they jam, wait for them to cool. Arrows on '
       'the edge point at enemies off screen, and the radar at the top left '
       'shows them all.\n\n'
-      'Low-level raid: up/down changes altitude; flying low puts your bullets '
-      'closer and tighter.\n\n'
+      'Low-level raid: tap a target and the plane turns to it and fires by '
+      'itself once it is in range; the stick takes over whenever you move it. '
+      'Up/down changes altitude; flying low puts your bullets closer and '
+      'tighter.\n\n'
       'Bombing run: the sight ignores the wind. Up/down changes speed. Framed '
       'targets are the primary targets.\n\n'
       'Keyboard: arrow keys or WASD; Space fires or drops a bomb.',
@@ -480,6 +486,7 @@ const _en = <String, String>{
   'hud.bombs': 'Bombs',
   'hud.primary': 'Primary',
   'hud.wind': 'Wind',
+  'hud.tapTarget': 'Tap a target: the plane turns to it and fires by itself',
   'control.fire': 'FIRE',
   'control.drop': 'BOMB',
 

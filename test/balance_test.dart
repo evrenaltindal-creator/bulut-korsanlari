@@ -68,6 +68,28 @@ void main() {
     });
   }
 
+  test('a rookie who only taps targets wins the first raid', () {
+    // Lining targets up by hand in the isometric view was too hard on a
+    // phone (first TestFlight build); tapping them must be enough.
+    final m = campaignMissions.firstWhere((m) => m.kind == MissionKind.raid);
+    var n = 0;
+    for (var i = 1; i <= 10; i++) {
+      final r = flyRaidByTapping(
+        RaidSim(
+          config: RaidConfig(
+            length: m.raid!.length,
+            targets: m.raid!.targets,
+            quota: m.raid!.quota,
+            turretRate: m.raid!.turretRate,
+            seed: i * 7 + 3,
+          ),
+        ),
+      );
+      if (r.outcome == MissionOutcome.success) n++;
+    }
+    expect(n, greaterThanOrEqualTo(8));
+  });
+
   test('the first mission is gentle even for a rookie', () {
     expect(
       wins(campaignMissions.first, const PilotSkills()),

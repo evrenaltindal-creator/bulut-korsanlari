@@ -32,17 +32,39 @@ class RaidPainter {
   late Offset _anchor;
   late double _camU;
   late double _camV;
+  bool _laidOut = false;
 
   Offset iso(double u, double v, double z) =>
       _anchor +
       (_au * (u - _camU) + _av * (v - _camV)) * _s -
       Offset(0, z * _s);
 
+  /// The living target nearest to a touch at [p] (screen coordinates),
+  /// if one is within a fingertip's [reach] and can still be marked.
+  RaidTarget? targetAt(Offset p, {double reach = 56}) {
+    if (!_laidOut) return null;
+    RaidTarget? best;
+    var bestD = reach;
+    for (final t in sim.targets) {
+      if (!sim.canMark(t)) continue;
+      final d = (iso(t.u, t.v, 10) - p).distance;
+      if (d < bestD) {
+        best = t;
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  /// Where [t] is on screen, as last painted.
+  Offset screenOf(RaidTarget t) => iso(t.u, t.v, 10);
+
   void paint(Canvas canvas, Size size, EdgeInsetsLike safe) {
     _s = size.height / 430;
     _anchor = Offset(size.width * 0.3, size.height * 0.6);
     _camU = sim.plane.x;
     _camV = sim.plane.y * 0.55;
+    _laidOut = true;
 
     canvas.save();
     // A hit rattles the view.
@@ -81,6 +103,7 @@ class RaidPainter {
       it.$2();
     }
 
+    _paintMark(canvas);
     _paintReticle(canvas);
     _paintShots(canvas);
     _paintPlane(canvas);
@@ -353,12 +376,40 @@ class RaidPainter {
     );
   }
 
+  /// Corner brackets around the tapped target: red while it is still out
+  /// of reach, gold once the guns are on it.
+  void _paintMark(Canvas canvas) {
+    final t = sim.marked;
+    if (t == null || sim.planeDown) return;
+    final locked = sim.lockedOn;
+    final c = iso(t.u, t.v, 10);
+    final pulse = 1 + 0.12 * math.sin(sim.time * 9);
+    final w = 30 * _s * (locked ? 1 : pulse);
+    final h = 22 * _s * (locked ? 1 : pulse);
+    final arm = 9 * _s;
+    final paint = Paint()
+      ..color = locked ? Palette.ok : Palette.danger
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..strokeCap = StrokeCap.round;
+    for (final (sx, sy) in const [
+      (-1.0, -1.0),
+      (1.0, -1.0),
+      (1.0, 1.0),
+      (-1.0, 1.0),
+    ]) {
+      final corner = c + Offset(sx * w, sy * h);
+      canvas.drawLine(corner, corner - Offset(sx * arm, 0), paint);
+      canvas.drawLine(corner, corner - Offset(0, sy * arm), paint);
+    }
+  }
+
   void _paintReticle(Canvas canvas) {
     if (sim.planeDown) return;
     final a = sim.aimPoint;
     final c = iso(a.x, a.y, 0);
     final paint = Paint()
-      ..color = Palette.hud
+      ..color = sim.lockedOn ? Palette.ok : Palette.hud
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.6;
     canvas.drawOval(
@@ -560,6 +611,15 @@ class RaidPainter {
       size: 10,
       anchor: const Offset(1, 0.5),
     );
+    if (!sim.everMarked && !sim.planeDown) {
+      paintLabel(
+        canvas,
+        tr('hud.tapTarget'),
+        Offset(size.width / 2, r.top - 16),
+        size: 14,
+        anchor: const Offset(0.5, 1),
+      );
+    }
     final altFrac =
         (sim.plane.z - RaidSim.minAlt) / (RaidSim.maxAlt - RaidSim.minAlt);
     paintLabel(

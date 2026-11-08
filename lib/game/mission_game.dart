@@ -60,6 +60,10 @@ abstract class MissionGame extends FlameGame with KeyboardEvents {
   void step(double dt, ControlState c);
   void paintScene(Canvas canvas, Size size);
 
+  /// A tap at [screen]; true when the mission used it (a raid marks the
+  /// target under the finger), false to treat it as an ordinary press.
+  bool tapAt(Vector2 screen) => false;
+
   @override
   Color backgroundColor() => const Color(0xFF14304F);
 
@@ -68,6 +72,8 @@ abstract class MissionGame extends FlameGame with KeyboardEvents {
     action.onPress = () {
       if (actionIsDrop) _pendingDrop = true;
     };
+    action.onTapAt = tapAt;
+    stick.onTapAt = tapAt;
     stick.priority = 10;
     action.priority = 10;
     camera.viewport.addAll([_Scene(this), stick, action]);
@@ -259,7 +265,15 @@ class RaidGame extends MissionGame {
   String get actionLabel => tr('control.fire');
 
   @override
-  bool get gunsFiring => controls.fire && !sim.planeDown;
+  bool get gunsFiring => (controls.fire || sim.lockedOn) && !sim.planeDown;
+
+  @override
+  bool tapAt(Vector2 screen) {
+    final t = painter.targetAt(Offset(screen.x, screen.y));
+    if (t == null) return false;
+    sim.mark(t);
+    return true;
+  }
 
   @override
   void step(double dt, ControlState c) => sim.update(dt, c);

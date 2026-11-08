@@ -93,6 +93,12 @@ class RaidSim implements MissionSim {
   static const double maxAlt = 120;
   static const double shotSpeed = 620;
 
+  /// How far ahead the guns can reach a marked target, and how far they
+  /// swing to either side of the plane's track to meet it.
+  static const double reachNear = 70;
+  static const double reachFar = 340;
+  static const double traverse = 55;
+
   final RaidConfig config;
   final PilotSkills skills;
   final math.Random rng;
@@ -126,6 +132,14 @@ class RaidSim implements MissionSim {
   int shotsHit = 0;
   MissionResult? _result;
 
+  /// The target the player tapped. The plane turns for it while the stick
+  /// is left alone, and the guns fire on it by themselves once it is in
+  /// reach: in the isometric view lining up a target by hand is hard.
+  RaidTarget? marked;
+
+  /// Whether any target has been marked yet (the hint goes away).
+  bool everMarked = false;
+
   @override
   double get health => _health;
   @override
@@ -139,8 +153,35 @@ class RaidSim implements MissionSim {
   double get progress =>
       ((plane.x - startU) / (config.length + 300 - startU)).clamp(0.0, 1.0);
 
-  /// Where the guns are pointing on the ground right now.
-  V3 get aimPoint => V3(plane.x + aimDistance, plane.y, 0);
+  /// Where the guns are pointing on the ground right now: on the marked
+  /// target once they can swing onto it, otherwise straight ahead.
+  V3 get aimPoint {
+    final t = marked;
+    if (lockedOn && t != null) return V3(t.u, t.v, 0);
+    return V3(plane.x + aimDistance, plane.y, 0);
+  }
+
+  /// Whether the guns are on the marked target and firing at it.
+  bool get lockedOn {
+    final t = marked;
+    if (t == null || !t.alive || planeDown || _result != null) return false;
+    final du = t.u - plane.x;
+    return du >= reachNear &&
+        du <= reachFar &&
+        (t.v - plane.y).abs() <= traverse;
+  }
+
+  /// Whether [t] can still be marked: alive and not yet under the plane.
+  bool canMark(RaidTarget t) =>
+      t.alive && !planeDown && t.u - plane.x >= reachNear;
+
+  /// Marks [t] (or clears the mark with null).
+  void mark(RaidTarget? t) {
+    if (t != null && !canMark(t)) return;
+    marked = t;
+    if (t != null) everMarked = true;
+  }
+
   double get aimDistance => 60 + plane.z * 2.1;
 
   /// Half width of the island at [u]; zero beyond its ends.
@@ -212,8 +253,15 @@ class RaidSim implements MissionSim {
       bank += dt * 2;
       if (fx.nextDouble() < 0.6) _smoke(plane.copy());
     } else {
+      final m = marked;
+      if (m != null && !canMark(m)) marked = null;
       final handling = 0.85 + 0.45 * skills.handling;
-      final sx = c.stickX.clamp(-1.0, 1.0);
+      var sx = c.stickX.clamp(-1.0, 1.0);
+      final target = marked;
+      if (target != null && sx.abs() < 0.2) {
+        // Stick left alone: turn for the marked target.
+        sx = ((target.v - plane.y) / 45).clamp(-0.8, 0.8);
+      }
       plane.y = (plane.y + sx * 230 * handling * dt).clamp(-maxV, maxV);
       plane.z = (plane.z + c.stickY.clamp(-1.0, 1.0) * 70 * dt).clamp(
         minAlt,
@@ -268,7 +316,7 @@ class RaidSim implements MissionSim {
 
   void _guns(double dt, ControlState c) {
     _cooldown -= dt;
-    if (!c.fire || _cooldown > 0) return;
+    if (!(c.fire || lockedOn) || _cooldown > 0) return;
     _cooldown = 0.075;
     shotsFired++;
     final spread = lerpDouble(16, 4, skills.gunnery);

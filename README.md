@@ -29,7 +29,9 @@ kaybolursa adı kayıtlara yazılır ve yeni bir pilot devralır. Rütbeler:
 Çaylak → Kanat Eri → Gözcü Başı → Yüzbaşı → As Pilot.
 
 **Kontroller:** Ekranın sol yarısı yüzen çubuktur (parmağı koy, kaydır).
-Sağ yarı ateş / bomba. Klavye: ok tuşları veya WASD, Boşluk. Ayarlar'da dikey
+Sağ yarı ateş / bomba. Alçak baskında hedefe dokunmak onu işaretler:
+çubuk boştayken uçak hedefe döner, hedef menzile girince silahlar kendisi
+ateş eder (izometrik görünümde hedefi elle hizalamak telefonda çok zordu). Klavye: ok tuşları veya WASD, Boşluk. Ayarlar'da dikey
 eksen ters çevrilebilir. Dil: Türkçe / İngilizce.
 
 ## Geliştirme

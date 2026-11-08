@@ -80,6 +80,24 @@ MissionResult flyRaid(RaidSim s, {double limit = 120}) {
       const MissionResult(outcome: MissionOutcome.objectiveFailed);
 }
 
+/// A player who only taps the next target and never touches the stick.
+MissionResult flyRaidByTapping(RaidSim s, {double limit = 120}) {
+  final c = ControlState();
+  for (var t = 0.0; t < limit && s.result == null; t += _dt) {
+    if (s.marked == null) {
+      RaidTarget? next;
+      for (final tg in s.targets) {
+        if (!s.canMark(tg) || tg.u < s.plane.x + 160) continue;
+        if (next == null || tg.u < next.u) next = tg;
+      }
+      s.mark(next);
+    }
+    s.update(_dt, c);
+  }
+  return s.result ??
+      const MissionResult(outcome: MissionOutcome.objectiveFailed);
+}
+
 MissionResult flyBombing(BombingSim s, {double limit = 120}) {
   final c = ControlState();
   for (var t = 0.0; t < limit && s.result == null; t += _dt) {

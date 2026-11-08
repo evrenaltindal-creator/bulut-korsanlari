@@ -1,4 +1,7 @@
-Bulut Korsanları — ilk deneme sürümü.
+Bulut Korsanları — deneme sürümü.
+
+Bu derlemede yeni:
+- Alçak baskın (Çakıl Kayası ve sonrası): hedefe dokun, uçak ona döner ve menzile girince kendisi ateş eder. Çubuğu oynatınca kontrol sende; sağ yarıya basılı tutarak elle ateş de edilebilir.
 
 Ses için telefonun yanındaki sessiz düğmesi KAPALI olmalı: oyun, telefon sessizdeyken ses çıkarmaz.
 

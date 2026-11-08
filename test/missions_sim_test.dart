@@ -185,6 +185,36 @@ void main() {
       expect(near.alive, isFalse);
     });
 
+    test('a marked target: the plane turns to it and fires by itself', () {
+      final s = sim({RaidTargetKind.crate: 1});
+      final t = s.targets.first;
+      s.plane.x = t.u - 600;
+      s.plane.y = t.v + 150;
+      s.mark(t);
+      expect(s.marked, t);
+      expect(s.lockedOn, isFalse, reason: 'too far and off to the side');
+      run(s.update, 4, ControlState());
+      expect(t.alive, isFalse);
+      expect(s.shotsFired, greaterThan(0));
+      expect(s.marked, isNull, reason: 'a destroyed target is let go');
+    });
+
+    test('the stick overrides the turn, and a passed target is let go', () {
+      final s = sim({RaidTargetKind.crate: 1});
+      final t = s.targets.first;
+      s.plane.x = t.u - 600;
+      s.plane.y = t.v + 150;
+      s.mark(t);
+      // Hold the stick hard the other way: the plane obeys the pilot.
+      run(s.update, 4, ControlState()..stickX = 1);
+      expect(s.plane.y, greaterThan(t.v + 150));
+      expect(t.alive, isTrue);
+      expect(s.marked, isNull);
+      expect(s.canMark(t), isFalse, reason: 'it is behind the plane now');
+      s.mark(t);
+      expect(s.marked, isNull);
+    });
+
     test('flying past without shooting misses the objective', () {
       final s = sim({RaidTargetKind.crate: 3});
       run(s.update, 30, ControlState());
